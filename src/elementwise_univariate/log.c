@@ -26,6 +26,7 @@ expr *new_log(expr *child)
 {
     expr *node = new_expr(child->m, child->n_vars);
     node->left = child;
+    expr_retain(child);
     node->forward = forward;
     node->jacobian_init = jacobian_init_elementwise;
     node->eval_jacobian = eval_jacobian_elementwise;

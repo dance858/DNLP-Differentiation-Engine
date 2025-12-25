@@ -27,6 +27,7 @@ expr *new_exp(expr *child)
     if (!node) return NULL;
 
     node->left = child;
+    expr_retain(child);
     node->forward = forward;
     node->is_affine = is_affine_elementwise;
     node->jacobian_init = jacobian_init_elementwise;

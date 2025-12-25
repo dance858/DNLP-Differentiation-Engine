@@ -26,9 +26,12 @@ typedef struct expr
     int m;
     int n_vars;
     int var_id;
+    int refcount;
     struct expr *left;
     struct expr *right;
     double *dwork;
+    int *iwork;
+    int p; /* power of power expression */
 
     // ------------------------------------------------------------------------
     //                     forward pass related quantities
@@ -40,6 +43,8 @@ typedef struct expr
     //                      jacobian related quantities
     // ------------------------------------------------------------------------
     CSR_Matrix *jacobian;
+    CSR_Matrix *Q;
+    CSR_Matrix *CSR_work;
     jacobian_init_fn jacobian_init;
     eval_jacobian_fn eval_jacobian;
     eval_local_jacobian_fn eval_local_jacobian;
@@ -49,5 +54,8 @@ typedef struct expr
 
 expr *new_expr(int m, int n_vars);
 void free_expr(expr *node);
+
+/* Reference counting helpers */
+void expr_retain(expr *node);
 
 #endif /* EXPR_H */

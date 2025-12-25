@@ -4,11 +4,12 @@
 
 expr *new_expr(int m, int n_vars)
 {
-    expr *node = (expr *) malloc(sizeof(expr));
+    expr *node = (expr *) calloc(1, sizeof(expr));
     if (!node) return NULL;
 
     node->m = m;
     node->n_vars = n_vars;
+    node->refcount = 1;
     node->value = (double *) calloc(m, sizeof(double));
     if (!node->value)
     {
@@ -16,14 +17,16 @@ expr *new_expr(int m, int n_vars)
         return NULL;
     }
 
-    node->left = NULL;
-    node->right = NULL;
-    node->forward = NULL;
-    node->jacobian = NULL;
-    node->jacobian_init = NULL;
-    node->eval_jacobian = NULL;
-    node->is_affine = NULL;
-    node->dwork = NULL;
+    // node->left = NULL;
+    // node->right = NULL;
+    // node->forward = NULL;
+    // node->jacobian = NULL;
+    // node->jacobian_init = NULL;
+    // node->eval_jacobian = NULL;
+    // node->is_affine = NULL;
+    // node->dwork = NULL;
+    // node->iwork = NULL;
+    // node->CSR_work = NULL;
     node->var_id = -1;
 
     return node;
@@ -31,7 +34,10 @@ expr *new_expr(int m, int n_vars)
 
 void free_expr(expr *node)
 {
-    if (!node) return;
+    if (node == NULL) return;
+
+    node->refcount--;
+    if (node->refcount > 0) return; /* Still referenced elsewhere */
 
     /* recursively free children */
     free_expr(node->left);
@@ -40,10 +46,18 @@ void free_expr(expr *node)
     /* free value array and jacobian */
     free(node->value);
     free_csr_matrix(node->jacobian);
+    free_csr_matrix(node->CSR_work);
     free(node->dwork);
+    free(node->iwork);
 
     /* free the node itself */
     free(node);
+}
+
+void expr_retain(expr *node)
+{
+    if (node == NULL) return;
+    node->refcount++;
 }
 
 bool is_affine(expr *node)

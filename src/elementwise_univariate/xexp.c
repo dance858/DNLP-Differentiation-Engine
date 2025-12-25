@@ -1,17 +1,16 @@
 #include "elementwise_univariate.h"
 #include <math.h>
+#include <string.h>
 
 static void forward(expr *node, const double *u)
 {
-    expr *child = node->left;
-
     /* child's forward pass */
-    child->forward(child, u);
+    node->left->forward(node->left, u);
 
     /* local forward pass */
     for (int i = 0; i < node->m; i++)
     {
-        node->value[i] = -child->value[i] * log(child->value[i]);
+        node->value[i] = node->left->value[i] * exp(node->left->value[i]);
     }
 }
 
@@ -20,19 +19,24 @@ static void eval_local_jacobian(expr *node, double *vals)
     expr *child = node->left;
     for (int j = 0; j < node->m; j++)
     {
-        vals[j] = -log(child->value[j]) - 1.0;
+        vals[j] = (1.0 + child->value[j]) * exp(child->value[j]);
     }
 }
 
-expr *new_entr(expr *child)
+expr *new_xexp(expr *child)
 {
+    if (!child) return NULL;
+
     expr *node = new_expr(child->m, child->n_vars);
+    if (!node) return NULL;
+
     node->left = child;
     expr_retain(child);
     node->forward = forward;
+    node->is_affine = is_affine_elementwise;
     node->jacobian_init = jacobian_init_elementwise;
     node->eval_jacobian = eval_jacobian_elementwise;
-    node->is_affine = is_affine_elementwise;
     node->eval_local_jacobian = eval_local_jacobian;
+
     return node;
 }

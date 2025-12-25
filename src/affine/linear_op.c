@@ -22,6 +22,7 @@ expr *new_linear(expr *u, const CSR_Matrix *A)
     if (!node) return NULL;
 
     node->left = u;
+    expr_retain(u);
     node->forward = forward;
     node->is_affine = is_affine;
 

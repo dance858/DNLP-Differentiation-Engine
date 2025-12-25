@@ -1,4 +1,7 @@
 #include "utils/CSR_Matrix.h"
+#include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,6 +49,38 @@ void csr_matvec(const CSR_Matrix *A, const double *x, double *y, int col_offset)
         }
         y[row] = sum;
     }
+}
+
+int count_nonzero_cols(const CSR_Matrix *A, bool *col_nz)
+{
+    for (int row = 0; row < A->m; row++)
+    {
+        for (int j = A->p[row]; j < A->p[row + 1]; j++)
+        {
+            col_nz[A->i[j]] = true;
+        }
+    }
+    int count = 0;
+    for (int col = 0; col < A->n; col++)
+    {
+        if (col_nz[col]) count++;
+    }
+
+    return count;
+}
+
+void insert_idx(int idx, int *arr, int len)
+{
+    int j = 0;
+
+    while (j < len && arr[j] < idx)
+    {
+        j++;
+    }
+
+    // move elements to the right
+    memmove(arr + (j + 1), arr + j, (len - j) * sizeof(int));
+    arr[j] = idx;
 }
 
 void diag_csr_mult(const double *d, const CSR_Matrix *A, CSR_Matrix *C)
@@ -102,8 +137,8 @@ void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
         if (a_ptr < a_end)
         {
             int a_remaining = a_end - a_ptr;
-            memcpy(C->i + C->nnz, A->i + a_ptr, a_remaining * sizeof(int));
-            memcpy(C->x + C->nnz, A->x + a_ptr, a_remaining * sizeof(double));
+            memmove(C->i + C->nnz, A->i + a_ptr, a_remaining * sizeof(int));
+            memmove(C->x + C->nnz, A->x + a_ptr, a_remaining * sizeof(double));
             C->nnz += a_remaining;
         }
 
@@ -111,11 +146,187 @@ void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
         if (b_ptr < b_end)
         {
             int b_remaining = b_end - b_ptr;
-            memcpy(C->i + C->nnz, B->i + b_ptr, b_remaining * sizeof(int));
-            memcpy(C->x + C->nnz, B->x + b_ptr, b_remaining * sizeof(double));
+            memmove(C->i + C->nnz, B->i + b_ptr, b_remaining * sizeof(int));
+            memmove(C->x + C->nnz, B->x + b_ptr, b_remaining * sizeof(double));
             C->nnz += b_remaining;
         }
     }
 
     C->p[A->m] = C->nnz;
 }
+
+void sum_scaled_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C,
+                             const double *d1, const double *d2)
+{
+    C->nnz = 0;
+
+    for (int row = 0; row < A->m; row++)
+    {
+        int a_ptr = A->p[row];
+        int a_end = A->p[row + 1];
+        int b_ptr = B->p[row];
+        int b_end = B->p[row + 1];
+        C->p[row] = C->nnz;
+
+        /* Merge while both have elements */
+        while (a_ptr < a_end && b_ptr < b_end)
+        {
+            if (A->i[a_ptr] < B->i[b_ptr])
+            {
+                C->i[C->nnz] = A->i[a_ptr];
+                C->x[C->nnz] = d1[row] * A->x[a_ptr];
+                a_ptr++;
+            }
+            else if (B->i[b_ptr] < A->i[a_ptr])
+            {
+                C->i[C->nnz] = B->i[b_ptr];
+                C->x[C->nnz] = d2[row] * B->x[b_ptr];
+                b_ptr++;
+            }
+            else
+            {
+                C->i[C->nnz] = A->i[a_ptr];
+                C->x[C->nnz] = d1[row] * A->x[a_ptr] + d2[row] * B->x[b_ptr];
+                a_ptr++;
+                b_ptr++;
+            }
+            C->nnz++;
+        }
+
+        /* Copy remaining elements from A */
+        if (a_ptr < a_end)
+        {
+            int a_remaining = a_end - a_ptr;
+            for (int j = 0; j < a_remaining; j++)
+            {
+                C->i[C->nnz + j] = A->i[a_ptr + j];
+                C->x[C->nnz + j] = d1[row] * A->x[a_ptr + j];
+            }
+            C->nnz += a_remaining;
+        }
+
+        /* Copy remaining elements from B */
+        if (b_ptr < b_end)
+        {
+            int b_remaining = b_end - b_ptr;
+            for (int j = 0; j < b_remaining; j++)
+            {
+                C->i[C->nnz + j] = B->i[b_ptr + j];
+                C->x[C->nnz + j] = d2[row] * B->x[b_ptr + j];
+            }
+            C->nnz += b_remaining;
+        }
+    }
+
+    C->p[A->m] = C->nnz;
+}
+
+void csr_insert_value(CSR_Matrix *A, int col_idx, double value)
+{
+    assert(A->m == 1);
+
+    for (int j = 0; j < A->nnz; j++)
+    {
+        assert(col_idx != A->i[j]);
+
+        if (col_idx < A->i[j])
+        {
+            /* move the rest of the elements */
+            memmove(A->i + (j + 1), A->i + j, (A->nnz - j) * sizeof(int));
+            memmove(A->x + (j + 1), A->x + j, (A->nnz - j) * sizeof(double));
+
+            /* insert new value */
+            A->i[j] = col_idx;
+            A->x[j] = value;
+            A->nnz++;
+            return;
+        }
+    }
+
+    /* if we get here it should be inserted in the end */
+    A->i[A->nnz] = col_idx;
+    A->x[A->nnz] = value;
+    A->nnz++;
+}
+
+CSR_Matrix *transpose(const CSR_Matrix *A, int *iwork)
+{
+    CSR_Matrix *AT = new_csr_matrix(A->n, A->m, A->nnz);
+
+    int i, j, start;
+    int *count = iwork;
+    memset(count, 0, A->n * sizeof(int));
+
+    // -------------------------------------------------------------------
+    //              compute nnz in each column of A
+    // -------------------------------------------------------------------
+    for (i = 0; i < A->m; ++i)
+    {
+        for (j = A->p[i]; j < A->p[i + 1]; ++j)
+        {
+            count[A->i[j]]++;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    //                      compute row pointers
+    // ------------------------------------------------------------------
+    AT->p[0] = 0;
+    for (i = 0; i < A->n; i++)
+    {
+        AT->p[i + 1] = AT->p[i] + count[i];
+        iwork[i] = AT->p[i];
+    }
+
+    // ------------------------------------------------------------------
+    //  fill transposed matrix (this is a bottleneck)
+    // ------------------------------------------------------------------
+    for (i = 0; i < A->m; ++i)
+    {
+        for (j = A->p[i]; j < A->p[i + 1]; j++)
+        {
+            AT->x[count[A->i[j]]] = A->x[j];
+            AT->i[count[A->i[j]]] = i;
+            count[A->i[j]]++;
+        }
+    }
+
+    return AT;
+}
+
+/**/
+void csr_matvec_fill_values(const CSR_Matrix *AT, const double *z, CSR_Matrix *C)
+{
+    int A_ncols = AT->m;
+
+    for (int i = 0; i < A_ncols; i++)
+    {
+        double val = 0;
+        for (int j = AT->p[i]; j < AT->p[i + 1]; j++)
+        {
+            val += z[AT->i[j]] * AT->x[j];
+        }
+
+        if (AT->p[i + 1] - AT->p[i] == 0) continue;
+
+        // find position in C
+        for (int k = 0; k < C->nnz; k++)
+        {
+            if (C->i[k] == i)
+            {
+                C->x[k] = val;
+                break;
+            }
+        }
+    }
+}
+
+// void csr_vecmat_sparse(const double *x, const CSR_Matrix *A, CSR_Matrix *C)
+//{
+//     memset(C->x, 0, C->nnz * sizeof(double));
+//     C->nnz = 0;
+//     for (int j = 0; j < A->nnz; j++)
+//     {
+//         C->x[]
+//     }
+// }

@@ -49,6 +49,8 @@ expr *new_add(expr *left, expr *right)
 
     node->left = left;
     node->right = right;
+    expr_retain(left);
+    expr_retain(right);
     node->forward = add_forward;
     node->is_affine = is_affine;
     node->jacobian_init = jacobian_init;

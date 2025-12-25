@@ -24,6 +24,7 @@ expr *new_sin(expr *child)
 {
     expr *node = new_expr(child->m, child->n_vars);
     node->left = child;
+    expr_retain(child);
     node->forward = sin_forward;
     node->jacobian_init = jacobian_init_elementwise;
     node->eval_jacobian = eval_jacobian_elementwise;
@@ -55,6 +56,7 @@ expr *new_cos(expr *child)
 {
     expr *node = new_expr(child->m, child->n_vars);
     node->left = child;
+    expr_retain(child);
     node->forward = cos_forward;
     node->jacobian_init = jacobian_init_elementwise;
     node->eval_jacobian = eval_jacobian_elementwise;
@@ -87,6 +89,7 @@ expr *new_tan(expr *child)
 {
     expr *node = new_expr(child->m, child->n_vars);
     node->left = child;
+    expr_retain(child);
     node->forward = tan_forward;
     node->jacobian_init = jacobian_init_elementwise;
     node->eval_jacobian = eval_jacobian_elementwise;

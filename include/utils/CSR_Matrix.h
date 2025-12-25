@@ -1,5 +1,6 @@
 #ifndef CSR_MATRIX_H
 #define CSR_MATRIX_H
+#include <stdbool.h>
 
 /* CSR (Compressed Sparse Row) Matrix Format
  *
@@ -30,8 +31,19 @@ void free_csr_matrix(CSR_Matrix *matrix);
 /* Copy CSR matrix A to C */
 void copy_csr_matrix(const CSR_Matrix *A, CSR_Matrix *C);
 
-/* matvec y = Ax, where A indices minus col_offset gives x indices */
+/* matvec y = Ax, where A indices minus col_offset gives x indices. Returns y as
+ * dense. */
 void csr_matvec(const CSR_Matrix *A, const double *x, double *y, int col_offset);
+
+/* C = z^T A is assumed to have one row. C must have column indices pre-computed
+and transposed matrix AT must be provided. Fills in values of C only.
+ */
+void csr_matvec_fill_values(const CSR_Matrix *AT, const double *z, CSR_Matrix *C);
+
+/* Insert value into CSR matrix A with just one row at col_idx. Assumes that A
+has enough space and that A does not have an element at col_idx. It does update
+nnz. */
+void csr_insert_value(CSR_Matrix *A, int col_idx, double value);
 
 /* Compute C = diag(d) * A where d is an array and A, C are CSR matrices
  * d must have length m
@@ -43,4 +55,15 @@ void diag_csr_mult(const double *d, const CSR_Matrix *A, CSR_Matrix *C);
  * C must be pre-allocated with sufficient nnz capacity */
 void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C);
 
+/* Compute C = diag(d1) * A + diag(d2) * B where A, B, C are CSR matrices */
+void sum_scaled_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C,
+                             const double *d1, const double *d2);
+
+/* Count number of columns with nonzero entries */
+int count_nonzero_cols(const CSR_Matrix *A, bool *col_nz);
+
+/* inserts 'idx' into array 'arr' in sorted order, and moves the other elements */
+void insert_idx(int idx, int *arr, int len);
+
+CSR_Matrix *transpose(const CSR_Matrix *A, int *iwork);
 #endif /* CSR_MATRIX_H */

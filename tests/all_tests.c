@@ -10,7 +10,11 @@
 #include "forward_pass/elementwise/test_exp.h"
 #include "forward_pass/elementwise/test_log.h"
 #include "jacobian_tests/test_composite.h"
+#include "jacobian_tests/test_elementwise_mult.h"
 #include "jacobian_tests/test_log.h"
+#include "jacobian_tests/test_quad_form.h"
+#include "jacobian_tests/test_quad_over_lin.h"
+#include "jacobian_tests/test_rel_entr.h"
 #include "utils/test_csr_matrix.h"
 
 int main(void)
@@ -32,11 +36,26 @@ int main(void)
     mu_run_test(test_jacobian_log, tests_run);
     mu_run_test(test_jacobian_composite_log, tests_run);
     mu_run_test(test_jacobian_composite_log_add, tests_run);
+    mu_run_test(test_jacobian_rel_entr_vector_args_1, tests_run);
+    mu_run_test(test_jacobian_rel_entr_vector_args_2, tests_run);
+    mu_run_test(test_jacobian_elementwise_mult_1, tests_run);
+    mu_run_test(test_jacobian_elementwise_mult_2, tests_run);
+    mu_run_test(test_jacobian_elementwise_mult_3, tests_run);
+    mu_run_test(test_jacobian_elementwise_mult_4, tests_run);
+    mu_run_test(test_quad_over_lin1, tests_run);
+    mu_run_test(test_quad_over_lin2, tests_run);
+    mu_run_test(test_quad_over_lin3, tests_run);
+    mu_run_test(test_quad_over_lin4, tests_run);
+    mu_run_test(test_quad_over_lin5, tests_run);
+    mu_run_test(test_quad_form, tests_run);
+    mu_run_test(test_quad_form2, tests_run);
 
     printf("\n--- Utility Tests ---\n");
     mu_run_test(test_diag_csr_mult, tests_run);
     mu_run_test(test_csr_sum, tests_run);
     mu_run_test(test_csr_sum2, tests_run);
+    mu_run_test(test_transpose, tests_run);
+    mu_run_test(test_csr_vecmat_values_sparse, tests_run);
 
     printf("\n=== All %d tests passed ===\n", tests_run);
 

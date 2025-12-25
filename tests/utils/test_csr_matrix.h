@@ -127,3 +127,74 @@ const char *test_csr_sum2()
 
     return 0;
 }
+
+const char *test_transpose()
+{
+    CSR_Matrix *A = new_csr_matrix(4, 5, 5);
+    double Ax[5] = {1.0, 1.0, 3.0, 2.0, 4.0};
+    int Ai[5] = {0, 4, 1, 0, 1};
+    int Ap[5] = {0, 2, 3, 4, 5};
+    memcpy(A->x, Ax, 5 * sizeof(double));
+    memcpy(A->i, Ai, 5 * sizeof(int));
+    memcpy(A->p, Ap, 5 * sizeof(int));
+
+    int iwork[5];
+    CSR_Matrix *AT = transpose(A, iwork);
+    double ATx_correct[5] = {1.0, 2.0, 3.0, 4.0, 1.0};
+    int ATi_correct[5] = {0, 2, 1, 3, 0};
+    int ATp_correct[6] = {0, 2, 4, 4, 4, 5};
+    mu_assert("AT vals incorrect", cmp_double_array(AT->x, ATx_correct, 5));
+    mu_assert("AT cols incorrect", cmp_int_array(AT->i, ATi_correct, 5));
+    mu_assert("AT rows incorrect", cmp_int_array(AT->p, ATp_correct, 6));
+
+    free_csr_matrix(A);
+    free_csr_matrix(AT);
+
+    return 0;
+}
+
+/* C = z^T A where
+
+z = (1, 2, 3, 4) and
+A = [1 0 0 0 1
+     0 3 0 0 0
+     2 0 0 0 0
+     0 4 0 0 0]
+*/
+const char *test_csr_vecmat_values_sparse()
+{
+    CSR_Matrix *A = new_csr_matrix(4, 5, 5);
+    double Ax[5] = {1.0, 1.0, 3.0, 2.0, 4.0};
+    int Ai[5] = {0, 4, 1, 0, 1};
+    int Ap[5] = {0, 2, 3, 4, 5};
+    memcpy(A->x, Ax, 5 * sizeof(double));
+    memcpy(A->i, Ai, 5 * sizeof(int));
+    memcpy(A->p, Ap, 5 * sizeof(int));
+
+    double z[4] = {1.0, 2.0, 3.0, 4.0};
+
+    CSR_Matrix *C = new_csr_matrix(1, 3, 3);
+    double Cx[3] = {0.0, 0.0, 0.0};
+    int Ci[3] = {0, 1, 4};
+    int Cp[2] = {0, 3};
+    memcpy(C->x, Cx, 3 * sizeof(double));
+    memcpy(C->i, Ci, 3 * sizeof(int));
+    memcpy(C->p, Cp, 2 * sizeof(int));
+
+    int iwork[5];
+
+    CSR_Matrix *AT = transpose(A, iwork);
+
+    csr_matvec_fill_values(AT, z, C);
+
+    double Cx_correct[3] = {7.0, 22.0, 1.0};
+
+    mu_assert("C nnz incorrect", C->nnz == 3);
+    mu_assert("C vals incorrect", cmp_double_array(C->x, Cx_correct, 3));
+
+    free_csr_matrix(A);
+    free_csr_matrix(AT);
+    free_csr_matrix(C);
+
+    return 0;
+}
