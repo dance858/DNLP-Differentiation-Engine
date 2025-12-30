@@ -17,7 +17,7 @@ static void forward(expr *node, const double *u)
 static void eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = (1.0 + child->value[j]) * exp(child->value[j]);
     }

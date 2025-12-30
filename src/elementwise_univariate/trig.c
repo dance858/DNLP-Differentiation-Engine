@@ -14,7 +14,7 @@ static void sin_forward(expr *node, const double *u)
 static void sin_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = cos(child->value[j]);
     }
@@ -46,7 +46,7 @@ static void cos_forward(expr *node, const double *u)
 static void cos_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = -sin(child->value[j]);
     }
@@ -78,7 +78,7 @@ static void tan_forward(expr *node, const double *u)
 static void tan_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         double c = cos(child->value[j]);
         vals[j] = 1.0 / (c * c);

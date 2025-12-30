@@ -16,7 +16,7 @@ static void forward(expr *node, const double *u)
 
 static void eval_local_jacobian(expr *node, double *vals)
 {
-    memcpy(vals, node->value, node->d1 * sizeof(double));
+    memcpy(vals, node->value, node->size * sizeof(double));
 }
 
 expr *new_exp(expr *child)

@@ -1,6 +1,6 @@
 #include "affine.h"
 
-static void add_forward(expr *node, const double *u)
+static void forward(expr *node, const double *u)
 {
     /* children's forward passes */
     node->left->forward(node->left, u);
@@ -52,7 +52,7 @@ expr *new_add(expr *left, expr *right)
     node->right = right;
     expr_retain(left);
     expr_retain(right);
-    node->forward = add_forward;
+    node->forward = forward;
     node->is_affine = is_affine;
     node->jacobian_init = jacobian_init;
     node->eval_jacobian = eval_jacobian;

@@ -30,6 +30,8 @@ typedef struct expr
     int refcount;
     struct expr *left;
     struct expr *right;
+    struct expr **args; /* hstack can have multiple arguments */
+    int n_args;
     double *dwork;
     int *iwork;
     struct int_double_pair *int_double_pairs; /* for sorting jacobian entries */

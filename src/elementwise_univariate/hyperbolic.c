@@ -14,7 +14,7 @@ static void sinh_forward(expr *node, const double *u)
 static void sinh_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = cosh(child->value[j]);
     }
@@ -46,7 +46,7 @@ static void tanh_forward(expr *node, const double *u)
 static void tanh_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         double c = cosh(child->value[j]);
         vals[j] = 1.0 / (c * c);
@@ -79,7 +79,7 @@ static void asinh_forward(expr *node, const double *u)
 static void asinh_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = 1.0 / sqrt(1.0 + child->value[j] * child->value[j]);
     }
@@ -111,7 +111,7 @@ static void atanh_forward(expr *node, const double *u)
 static void atanh_eval_local_jacobian(expr *node, double *vals)
 {
     expr *child = node->left;
-    for (int j = 0; j < node->d1; j++)
+    for (int j = 0; j < node->size; j++)
     {
         vals[j] = 1.0 / (1.0 - child->value[j] * child->value[j]);
     }

@@ -4,6 +4,7 @@
 
 /* Include all test headers */
 #include "forward_pass/affine/test_add.h"
+#include "forward_pass/affine/test_hstack.h"
 #include "forward_pass/affine/test_linear_op.h"
 #include "forward_pass/affine/test_sum.h"
 #include "forward_pass/affine/test_variable_constant.h"
@@ -12,6 +13,7 @@
 #include "forward_pass/elementwise/test_log.h"
 #include "jacobian_tests/test_composite.h"
 #include "jacobian_tests/test_elementwise_mult.h"
+#include "jacobian_tests/test_hstack.h"
 #include "jacobian_tests/test_log.h"
 #include "jacobian_tests/test_quad_form.h"
 #include "jacobian_tests/test_quad_over_lin.h"
@@ -36,6 +38,8 @@ int main(void)
     mu_run_test(test_sum_axis_neg1, tests_run);
     mu_run_test(test_sum_axis_0, tests_run);
     mu_run_test(test_sum_axis_1, tests_run);
+    mu_run_test(test_hstack_forward_vectors, tests_run);
+    mu_run_test(test_hstack_forward_matrix, tests_run);
 
     printf("\n--- Jacobian Tests ---\n");
     mu_run_test(test_jacobian_log, tests_run);
@@ -59,6 +63,8 @@ int main(void)
     mu_run_test(test_jacobian_sum_log_axis_0, tests_run);
     mu_run_test(test_jacobian_sum_add_log_axis_0, tests_run);
     mu_run_test(test_jacobian_sum_log_axis_1, tests_run);
+    mu_run_test(test_jacobian_hstack_vectors, tests_run);
+    mu_run_test(test_jacobian_hstack_matrix, tests_run);
 
     printf("\n--- Utility Tests ---\n");
     mu_run_test(test_diag_csr_mult, tests_run);
