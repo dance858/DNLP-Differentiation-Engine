@@ -1,0 +1,119 @@
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+#include <numpy/arrayobject.h>
+#include <stdbool.h>
+
+#include "affine.h"
+#include "elementwise_univariate.h"
+#include "expr.h"
+
+// Capsule name for expr* pointers
+#define EXPR_CAPSULE_NAME "DNLP_EXPR"
+
+static int ensure_numpy(void)
+{
+    import_array();
+    return 0;
+}
+
+static void expr_capsule_destructor(PyObject *capsule)
+{
+    expr *node = (expr *) PyCapsule_GetPointer(capsule, EXPR_CAPSULE_NAME);
+    if (node)
+    {
+        free_expr(node);
+    }
+}
+
+static PyObject *py_make_variable(PyObject *self, PyObject *args)
+{
+    int d1, d2, var_id, n_vars;
+    if (!PyArg_ParseTuple(args, "iiii", &d1, &d2, &var_id, &n_vars))
+    {
+        return NULL;
+    }
+
+    expr *node = new_variable(d1, d2, var_id, n_vars);
+    if (!node)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "failed to create variable node");
+        return NULL;
+    }
+    return PyCapsule_New(node, EXPR_CAPSULE_NAME, expr_capsule_destructor);
+}
+
+static PyObject *py_make_log(PyObject *self, PyObject *args)
+{
+    PyObject *child_capsule;
+    if (!PyArg_ParseTuple(args, "O", &child_capsule))
+    {
+        return NULL;
+    }
+    expr *child = (expr *) PyCapsule_GetPointer(child_capsule, EXPR_CAPSULE_NAME);
+    if (!child)
+    {
+        PyErr_SetString(PyExc_ValueError, "invalid child capsule");
+        return NULL;
+    }
+
+    expr *node = new_log(child);
+    if (!node)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "failed to create log node");
+        return NULL;
+    }
+    return PyCapsule_New(node, EXPR_CAPSULE_NAME, expr_capsule_destructor);
+}
+
+static PyObject *py_forward(PyObject *self, PyObject *args)
+{
+    PyObject *node_capsule;
+    PyObject *u_obj;
+    if (!PyArg_ParseTuple(args, "OO", &node_capsule, &u_obj))
+    {
+        return NULL;
+    }
+
+    expr *node = (expr *) PyCapsule_GetPointer(node_capsule, EXPR_CAPSULE_NAME);
+    if (!node)
+    {
+        PyErr_SetString(PyExc_ValueError, "invalid node capsule");
+        return NULL;
+    }
+
+    PyArrayObject *u_array =
+        (PyArrayObject *) PyArray_FROM_OTF(u_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (!u_array)
+    {
+        return NULL;
+    }
+
+    node->forward(node, (const double *) PyArray_DATA(u_array));
+
+    npy_intp size = node->size;
+    PyObject *out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
+    if (!out)
+    {
+        Py_DECREF(u_array);
+        return NULL;
+    }
+    memcpy(PyArray_DATA((PyArrayObject *) out), node->value, size * sizeof(double));
+
+    Py_DECREF(u_array);
+    return out;
+}
+
+static PyMethodDef DNLPMethods[] = {
+    {"make_variable", py_make_variable, METH_VARARGS, "Create variable node"},
+    {"make_log", py_make_log, METH_VARARGS, "Create log node"},
+    {"forward", py_forward, METH_VARARGS, "Run forward pass and return values"},
+    {NULL, NULL, 0, NULL}};
+
+static struct PyModuleDef dnlp_module = {PyModuleDef_HEAD_INIT, "DNLP_diff_engine",
+                                         NULL, -1, DNLPMethods};
+
+PyMODINIT_FUNC PyInit_DNLP_diff_engine(void)
+{
+    if (ensure_numpy() < 0) return NULL;
+    return PyModule_Create(&dnlp_module);
+}
