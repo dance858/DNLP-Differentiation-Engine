@@ -46,6 +46,15 @@ void free_expr(expr *node)
     free_expr(node->left);
     free_expr(node->right);
 
+    /* free arguments */
+    if (node->args)
+    {
+        for (int i = 0; i < node->n_args; i++)
+        {
+            free_expr(node->args[i]);
+        }
+    }
+
     /* free value array and jacobian */
     free(node->value);
     free_csr_matrix(node->jacobian);
