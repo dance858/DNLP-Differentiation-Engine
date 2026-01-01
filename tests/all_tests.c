@@ -79,6 +79,7 @@ int main(void)
     mu_run_test(test_ATA_alloc_simple, tests_run);
     mu_run_test(test_ATA_alloc_diagonal_like, tests_run);
     mu_run_test(test_ATA_alloc_random, tests_run);
+    mu_run_test(test_ATA_alloc_random2, tests_run);
 
     printf("\n=== All %d tests passed ===\n", tests_run);
 

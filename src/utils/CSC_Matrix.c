@@ -95,3 +95,60 @@ CSR_Matrix *ATA_alloc(const CSC_Matrix *A)
 
     return C;
 }
+
+static inline double sparse_wdot(const double *a_x, const int *a_i, int a_nnz,
+                                 const double *b_x, const int *b_i, int b_nnz,
+                                 const double *d)
+{
+    int ii = 0;
+    int jj = 0;
+    double sum = 0.0;
+
+    while (ii < a_nnz && jj < b_nnz)
+    {
+        if (a_i[ii] == b_i[jj])
+        {
+            sum += a_x[ii] * b_x[jj] * d[a_i[ii]];
+            ii++;
+            jj++;
+        }
+        else if (a_i[ii] < b_i[jj])
+        {
+            ii++;
+        }
+        else
+        {
+            jj++;
+        }
+    }
+
+    return sum;
+}
+
+void ATDA_values(const CSC_Matrix *A, const double *d, CSR_Matrix *C)
+{
+    int i, j, ii, jj;
+    for (i = 0; i < C->m; i++)
+    {
+        for (jj = C->p[i]; jj < C->p[i + 1]; jj++)
+        {
+            j = C->i[jj];
+
+            if (j < i)
+            {
+                C->x[jj] = csr_get_value(C, j, i);
+            }
+            else
+            {
+                int nnz_ai = A->p[i + 1] - A->p[i];
+                int nnz_aj = A->p[j + 1] - A->p[j];
+
+                /* compute Cij = weighted inner product of column i and column j */
+                double sum = sparse_wdot(A->x + A->p[i], A->i + A->p[i], nnz_ai,
+                                         A->x + A->p[j], A->i + A->p[j], nnz_aj, d);
+
+                C->x[jj] = sum;
+            }
+        }
+    }
+}

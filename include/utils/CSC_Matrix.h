@@ -33,4 +33,9 @@ void free_csc_matrix(CSC_Matrix *matrix);
  */
 CSR_Matrix *ATA_alloc(const CSC_Matrix *A);
 
+/* Compute values for C = A^T D A
+ * C must have precomputed sparsity pattern
+ */
+void ATDA_values(const CSC_Matrix *A, const double *d, CSR_Matrix *C);
+
 #endif /* CSC_MATRIX_H */

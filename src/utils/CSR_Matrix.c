@@ -475,6 +475,18 @@ void csr_matvec_fill_values(const CSR_Matrix *AT, const double *z, CSR_Matrix *C
 //     }
 // }
 
+double csr_get_value(const CSR_Matrix *A, int row, int col)
+{
+    for (int j = A->p[row]; j < A->p[row + 1]; j++)
+    {
+        if (A->i[j] == col)
+        {
+            return A->x[j];
+        }
+    }
+    return 0.0;
+}
+
 void symmetrize_csr(const int *Ap, const int *Ai, int m, CSR_Matrix *C)
 {
     int i, j, col;

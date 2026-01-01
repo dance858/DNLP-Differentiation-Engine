@@ -84,8 +84,10 @@ const char *test_ATA_alloc_random()
     CSC_Matrix *A = new_csc_matrix(10, 15, 15);
     int Ap[16] = {0, 1, 1, 1, 1, 4, 5, 6, 7, 8, 9, 11, 11, 11, 13, 15};
     int Ai[15] = {5, 0, 6, 9, 0, 5, 1, 3, 6, 0, 6, 3, 6, 6, 8};
+    double Ax[15] = {7, 4, 8, 5, 7, 3, 7, 8, 5, 4, 8, 8, 3, 6, 5};
     memcpy(A->p, Ap, 16 * sizeof(int));
     memcpy(A->i, Ai, 15 * sizeof(int));
+    memcpy(A->x, Ax, 15 * sizeof(double));
     CSR_Matrix *C = ATA_alloc(A);
 
     int expected_p[16] = {0, 2, 2, 2, 2, 8, 11, 13, 14, 16, 21, 27, 27, 27, 33, 38};
@@ -96,6 +98,54 @@ const char *test_ATA_alloc_random()
     mu_assert("p incorrect", cmp_int_array(C->p, expected_p, 16));
     mu_assert("i incorrect", cmp_int_array(C->i, expected_i, C->nnz));
     mu_assert("nnz incorrect", C->nnz == 38);
+
+    double d[10] = {2, 8, 6, 2, 5, 1, 6, 9, 1, 3};
+
+    ATDA_values(A, d, C);
+
+    double Cx_correct[38] = {
+        49.,  21.,  491., 56.,  240., 416., 144., 288., 56.,  98.,  56.,  21.,  9.,
+        392., 128., 128., 240., 150., 240., 90.,  180., 416., 56.,  240., 416., 144.,
+        288., 144., 128., 90.,  144., 182., 108., 288., 180., 288., 108., 241.};
+    mu_assert("x incorrect", cmp_double_array(C->x, Cx_correct, C->nnz));
+
+    free_csr_matrix(C);
+    free_csc_matrix(A);
+
+    return 0;
+}
+
+const char *test_ATA_alloc_random2()
+{
+    /* Create A in CSC format  */
+    int m = 15;
+    int n = 10;
+    CSC_Matrix *A = new_csc_matrix(m, n, 15);
+    int Ap[11] = {0, 2, 4, 6, 6, 9, 12, 12, 14, 14, 15};
+    int Ai[15] = {9, 12, 3, 4, 1, 6, 4, 8, 13, 1, 3, 7, 5, 13, 6};
+    double Ax[15] = {0.99, 0.9,  0.51, 0.64, 0.39, 0.29, 0.26, 0.91,
+                     0.35, 0.18, 0.33, 0.73, 0.97, 0.86, 1.03};
+    memcpy(A->p, Ap, 11 * sizeof(int));
+    memcpy(A->i, Ai, 15 * sizeof(int));
+    memcpy(A->x, Ax, 15 * sizeof(double));
+    CSR_Matrix *C = ATA_alloc(A);
+
+    int expected_p[11] = {0, 1, 4, 7, 7, 10, 13, 13, 15, 15, 17};
+    int expected_i[17] = {0, 1, 4, 5, 2, 5, 9, 1, 4, 7, 1, 2, 5, 4, 7, 2, 9};
+
+    mu_assert("p incorrect", cmp_int_array(C->p, expected_p, 11));
+    mu_assert("i incorrect", cmp_int_array(C->i, expected_i, C->nnz));
+    mu_assert("nnz incorrect", C->nnz == 17);
+    double d[15] = {-0.6,  -0.23, -0.29, -1.36, 0.4,   0.36, 0.11, -0.13,
+                    -1.32, -0.32, -0.24, -0.7,  -0.06, 0.5,  1.99};
+
+    ATDA_values(A, d, C);
+
+    double Cx_correct[17] = {-0.362232, -0.189896, 0.06656,   -0.228888, -0.025732,
+                             -0.016146, 0.032857,  0.06656,   -1.004802, 0.1505,
+                             -0.228888, -0.016146, -0.224833, 0.1505,    0.708524,
+                             0.032857,  0.116699};
+    mu_assert("x incorrect", cmp_double_array(C->x, Cx_correct, C->nnz));
 
     free_csr_matrix(C);
     free_csc_matrix(A);

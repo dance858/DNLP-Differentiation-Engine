@@ -80,6 +80,8 @@ int count_nonzero_cols(const CSR_Matrix *A, bool *col_nz);
 /* inserts 'idx' into array 'arr' in sorted order, and moves the other elements */
 void insert_idx(int idx, int *arr, int len);
 
+double csr_get_value(const CSR_Matrix *A, int row, int col);
+
 CSR_Matrix *transpose(const CSR_Matrix *A, int *iwork);
 
 /* Expand symmetric CSR matrix A to full matrix C. A is assumed to store
