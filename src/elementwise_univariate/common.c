@@ -100,4 +100,5 @@ expr *new_elementwise(expr *child)
     node->eval_jacobian = eval_jacobian_elementwise;
     node->wsum_hess_init = wsum_hess_init_elementwise;
     node->eval_wsum_hess = eval_wsum_hess_elementwise;
+    return node;
 }
