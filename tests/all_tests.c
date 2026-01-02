@@ -27,6 +27,7 @@
 #include "wsum_hess/test_log.h"
 #include "wsum_hess/test_logistic.h"
 #include "wsum_hess/test_power.h"
+#include "wsum_hess/test_sum.h"
 #include "wsum_hess/test_trig.h"
 #include "wsum_hess/test_xexp.h"
 
@@ -90,6 +91,9 @@ int main(void)
     mu_run_test(test_wsum_hess_tanh, tests_run);
     mu_run_test(test_wsum_hess_asinh, tests_run);
     mu_run_test(test_wsum_hess_atanh, tests_run);
+    mu_run_test(test_wsum_hess_sum_log_linear, tests_run);
+    mu_run_test(test_wsum_hess_sum_log_axis0, tests_run);
+    mu_run_test(test_wsum_hess_sum_log_axis1, tests_run);
 
     printf("\n--- Utility Tests ---\n");
     mu_run_test(test_diag_csr_mult, tests_run);

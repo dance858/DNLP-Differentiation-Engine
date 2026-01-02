@@ -34,6 +34,27 @@ static void eval_jacobian(expr *node)
     sum_csr_matrices(node->left->jacobian, node->right->jacobian, node->jacobian);
 }
 
+static void wsum_hess_init(expr *node)
+{
+    /* initialize children's wsum_hess */
+    node->left->wsum_hess_init(node->left);
+    node->right->wsum_hess_init(node->right);
+
+    /* we never have to store more than the sum of children's nnz */
+    int nnz_max = node->left->wsum_hess->nnz + node->right->wsum_hess->nnz;
+    node->wsum_hess = new_csr_matrix(node->n_vars, node->n_vars, nnz_max);
+}
+
+static void eval_wsum_hess(expr *node, double *w)
+{
+    /* evaluate children's wsum_hess */
+    node->left->eval_wsum_hess(node->left, w);
+    node->right->eval_wsum_hess(node->right, w);
+
+    /* sum children's wsum_hess */
+    sum_csr_matrices(node->left->wsum_hess, node->right->wsum_hess, node->wsum_hess);
+}
+
 static bool is_affine(expr *node)
 {
     return node->left->is_affine(node->left) && node->right->is_affine(node->right);
@@ -56,6 +77,8 @@ expr *new_add(expr *left, expr *right)
     node->is_affine = is_affine;
     node->jacobian_init = jacobian_init;
     node->eval_jacobian = eval_jacobian;
+    node->wsum_hess_init = wsum_hess_init;
+    node->eval_wsum_hess = eval_wsum_hess;
 
     return node;
 }

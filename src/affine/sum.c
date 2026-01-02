@@ -1,5 +1,6 @@
 #include "affine.h"
 #include "utils/int_double_pair.h"
+#include "utils/mini_numpy.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,6 +92,40 @@ static void eval_jacobian(expr *node)
     }
 }
 
+static void wsum_hess_init(expr *node)
+{
+    expr *x = node->left;
+    /* initialize child's wsum_hess */
+    x->wsum_hess_init(x);
+
+    /* we never have to store more than the child's nnz */
+    node->wsum_hess = new_csr_matrix(node->n_vars, node->n_vars, x->wsum_hess->nnz);
+    node->dwork = malloc(x->size * sizeof(double));
+}
+
+static void eval_wsum_hess(expr *node, double *w)
+{
+    expr *x = node->left;
+
+    if (node->axis == -1)
+    {
+        scaled_ones(node->dwork, x->size, *w);
+    }
+    else if (node->axis == 0)
+    {
+        repeat(node->dwork, w, x->d2, x->d1);
+    }
+    else if (node->axis == 1)
+    {
+        tile(node->dwork, w, x->d1, x->d2);
+    }
+
+    x->eval_wsum_hess(x, node->dwork);
+
+    /* todo: is this copy necessary or can we just change pointers? */
+    copy_csr_matrix(x->wsum_hess, node->wsum_hess);
+}
+
 static bool is_affine(expr *node)
 {
     return node->left->is_affine(node->left);
@@ -125,6 +160,8 @@ expr *new_sum(expr *child, int axis)
     node->is_affine = is_affine;
     node->jacobian_init = jacobian_init;
     node->eval_jacobian = eval_jacobian;
+    node->wsum_hess_init = wsum_hess_init;
+    node->eval_wsum_hess = eval_wsum_hess;
     node->axis = axis;
 
     return node;
