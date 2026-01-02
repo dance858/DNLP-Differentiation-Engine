@@ -36,9 +36,9 @@ const char *test_jacobian_matrix_log()
     log_node->forward(log_node, u_vals);
     log_node->jacobian_init(log_node);
     log_node->eval_jacobian(log_node);
-    mu_assert("matrix log vals fail", cmp_double_array(log_node->jacobian->x, expected_Ax, 4));
-    mu_assert("matrix log rows fail", cmp_int_array(log_node->jacobian->p, expected_Ap, 5));
-    mu_assert("matrix log cols fail", cmp_int_array(log_node->jacobian->i, expected_Ai, 4));
+    mu_assert("vals fail", cmp_double_array(log_node->jacobian->x, expected_Ax, 4));
+    mu_assert("rows fail", cmp_int_array(log_node->jacobian->p, expected_Ap, 5));
+    mu_assert("cols fail", cmp_int_array(log_node->jacobian->i, expected_Ai, 4));
     free_expr(log_node);
     free_expr(u);
     return 0;
