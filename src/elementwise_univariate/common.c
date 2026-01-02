@@ -35,8 +35,10 @@ void eval_jacobian_elementwise(expr *node)
     }
     else
     {
+        /* Child must be a linear operator */
+        linear_op_expr *lin_child = (linear_op_expr *) child;
         node->local_jacobian(node, node->dwork);
-        diag_csr_mult(node->dwork, child->A_csr, node->jacobian);
+        diag_csr_mult(node->dwork, lin_child->A_csr, node->jacobian);
     }
 }
 
@@ -65,7 +67,8 @@ void wsum_hess_init_elementwise(expr *node)
     /* otherwise it will be a linear operator */
     else
     {
-        node->wsum_hess = ATA_alloc(child->A_csc);
+        linear_op_expr *lin_child = (linear_op_expr *) child;
+        node->wsum_hess = ATA_alloc(lin_child->A_csc);
     }
 }
 
@@ -79,8 +82,10 @@ void eval_wsum_hess_elementwise(expr *node, double *w)
     }
     else
     {
+        /* Child must be a linear operator */
+        linear_op_expr *lin_child = (linear_op_expr *) child;
         node->local_wsum_hess(node, node->dwork, w);
-        ATDA_values(child->A_csc, node->dwork, node->wsum_hess);
+        ATDA_values(lin_child->A_csc, node->dwork, node->wsum_hess);
     }
 }
 
@@ -90,15 +95,42 @@ bool is_affine_elementwise(expr *node)
     return false;
 }
 
+/* Helper function to initialize an already-allocated expr for elementwise operations
+ */
+void init_elementwise(expr *node, expr *child)
+{
+    node->d1 = child->d1;
+    node->d2 = child->d2;
+    node->size = child->d1 * child->d2;
+    node->n_vars = child->n_vars;
+    node->var_id = -1;
+    node->refcount = 1;
+    node->left = child;
+    node->right = NULL;
+    node->dwork = NULL;
+    node->iwork = NULL;
+    node->value = (double *) calloc(node->size, sizeof(double));
+    node->jacobian = NULL;
+    node->wsum_hess = NULL;
+    node->CSR_work = NULL;
+    node->jacobian_init = jacobian_init_elementwise;
+    node->wsum_hess_init = wsum_hess_init_elementwise;
+    node->eval_jacobian = eval_jacobian_elementwise;
+    node->eval_wsum_hess = eval_wsum_hess_elementwise;
+    node->local_jacobian = NULL;
+    node->local_wsum_hess = NULL;
+    node->is_affine = is_affine_elementwise;
+    node->forward = NULL;
+    node->free_type_data = NULL;
+
+    expr_retain(child);
+}
+
 expr *new_elementwise(expr *child)
 {
     expr *node = new_expr(child->d1, child->d2, child->n_vars);
-    node->left = child;
-    expr_retain(child);
-    node->is_affine = is_affine_elementwise;
-    node->jacobian_init = jacobian_init_elementwise;
-    node->eval_jacobian = eval_jacobian_elementwise;
-    node->wsum_hess_init = wsum_hess_init_elementwise;
-    node->eval_wsum_hess = eval_wsum_hess_elementwise;
+    if (!node) return NULL;
+
+    init_elementwise(node, child);
     return node;
 }

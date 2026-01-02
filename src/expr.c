@@ -20,16 +20,6 @@ expr *new_expr(int d1, int d2, int n_vars)
         return NULL;
     }
 
-    // node->left = NULL;
-    // node->right = NULL;
-    // node->forward = NULL;
-    // node->jacobian = NULL;
-    // node->jacobian_init = NULL;
-    // node->eval_jacobian = NULL;
-    // node->is_affine = NULL;
-    // node->dwork = NULL;
-    // node->iwork = NULL;
-    // node->CSR_work = NULL;
     node->var_id = -1;
 
     return node;
@@ -46,25 +36,19 @@ void free_expr(expr *node)
     free_expr(node->left);
     free_expr(node->right);
 
-    /* free arguments */
-    if (node->args)
-    {
-        for (int i = 0; i < node->n_args; i++)
-        {
-            free_expr(node->args[i]);
-        }
-    }
-
     /* free value array and jacobian */
     free(node->value);
     free_csr_matrix(node->jacobian);
     free_csr_matrix(node->wsum_hess);
     free_csr_matrix(node->CSR_work);
-    free_csr_matrix(node->A_csr);
-    free_csc_matrix(node->A_csc);
     free(node->dwork);
     free(node->iwork);
-    free_int_double_pair_array(node->int_double_pairs);
+
+    /* free type-specific data */
+    if (node->free_type_data)
+    {
+        node->free_type_data(node);
+    }
 
     /* free the node itself */
     free(node);

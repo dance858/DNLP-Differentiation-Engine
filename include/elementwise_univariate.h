@@ -3,6 +3,10 @@
 
 #include "expr.h"
 
+/* Helper function to initialize an elementwise expr (can be used with derived types)
+ */
+void init_elementwise(expr *node, expr *child);
+
 expr *new_exp(expr *child);
 expr *new_log(expr *child);
 expr *new_entr(expr *child);

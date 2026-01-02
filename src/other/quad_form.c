@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+/* Note: Q is not freed here because it's owned by the caller */
+
 static void forward(expr *node, const double *u)
 {
     expr *x = node->left;
@@ -11,7 +13,8 @@ static void forward(expr *node, const double *u)
     x->forward(x, u);
 
     /* local forward pass  */
-    csr_matvec(node->Q, x->value, node->dwork, 0);
+    quad_form_expr *qnode = (quad_form_expr *) node;
+    csr_matvec(qnode->Q, x->value, node->dwork, 0);
 
     node->value[0] = 0.0;
 
@@ -71,7 +74,8 @@ static void jacobian_init(expr *node)
 static void eval_jacobian(expr *node)
 {
     expr *x = node->left;
-    CSR_Matrix *Q = node->Q;
+    quad_form_expr *qnode = (quad_form_expr *) node;
+    CSR_Matrix *Q = qnode->Q;
 
     /* if x is a variable */
     if (x->var_id != -1)
@@ -98,14 +102,56 @@ static void eval_jacobian(expr *node)
     }
 }
 
+/* Helper function to initialize a quad_form expr */
+void init_quad_form(expr *node, expr *child)
+{
+    node->d1 = child->d1;
+    node->d2 = 1;
+    node->size = child->d1 * 1;
+    node->n_vars = child->n_vars;
+    node->var_id = -1;
+    node->refcount = 1;
+    node->left = child;
+    node->right = NULL;
+    node->dwork = NULL;
+    node->iwork = NULL;
+    node->value = (double *) calloc(node->size, sizeof(double));
+    node->jacobian = NULL;
+    node->wsum_hess = NULL;
+    node->CSR_work = NULL;
+    node->jacobian_init = jacobian_init;
+    node->wsum_hess_init = NULL;
+    node->eval_jacobian = eval_jacobian;
+    node->eval_wsum_hess = NULL;
+    node->local_jacobian = NULL;
+    node->local_wsum_hess = NULL;
+    node->is_affine = NULL;
+    node->forward = forward;
+    node->free_type_data = NULL; /* Q is owned by caller */
+
+    expr_retain(child);
+}
+
 expr *new_quad_form(expr *left, CSR_Matrix *Q)
 {
-    expr *node = new_expr(left->d1, 1, left->n_vars);
-    node->left = left;
-    expr_retain(left);
-    node->Q = Q;
-    node->forward = forward;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
+    /* Allocate the type-specific struct */
+    quad_form_expr *qnode = (quad_form_expr *) malloc(sizeof(quad_form_expr));
+    if (!qnode) return NULL;
+
+    expr *node = &qnode->base;
+
+    /* Initialize base quad_form fields */
+    init_quad_form(node, left);
+
+    /* Check if allocation succeeded */
+    if (!node->value)
+    {
+        free(qnode);
+        return NULL;
+    }
+
+    /* Set type-specific field */
+    qnode->Q = Q;
+
     return node;
 }
