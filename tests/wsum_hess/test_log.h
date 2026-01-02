@@ -86,6 +86,8 @@ const char *test_wsum_hess_log_composite()
               cmp_int_array(log_node->wsum_hess->p, expected_p, 6));
     mu_assert("cols incorrect",
               cmp_int_array(log_node->wsum_hess->i, expected_i, 25));
+    free_csr_matrix(A_csr);
+    free_expr(Ax_node);
     free_expr(log_node);
     free_expr(x);
 
