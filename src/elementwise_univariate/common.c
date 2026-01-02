@@ -96,20 +96,26 @@ bool is_affine_elementwise(expr *node)
 }
 
 /* Helper function to initialize an already-allocated expr for elementwise operations
+ * This is called when a power_expr or other type-specific struct is allocated
+ * and we need to initialize the base expr fields
  */
 void init_elementwise(expr *node, expr *child)
 {
+    /* Initialize dimensions from child */
     node->d1 = child->d1;
     node->d2 = child->d2;
     node->size = child->d1 * child->d2;
     node->n_vars = child->n_vars;
     node->var_id = -1;
     node->refcount = 1;
+
+    /* Allocate the value array */
+    node->value = (double *) calloc(node->size, sizeof(double));
+
     node->left = child;
     node->right = NULL;
     node->dwork = NULL;
     node->iwork = NULL;
-    node->value = (double *) calloc(node->size, sizeof(double));
     node->jacobian = NULL;
     node->wsum_hess = NULL;
     node->CSR_work = NULL;
@@ -128,7 +134,7 @@ void init_elementwise(expr *node, expr *child)
 
 expr *new_elementwise(expr *child)
 {
-    expr *node = new_expr(child->d1, child->d2, child->n_vars);
+    expr *node = (expr *) malloc(sizeof(expr));
     if (!node) return NULL;
 
     init_elementwise(node, child);
