@@ -40,7 +40,7 @@ static void local_wsum_hess(expr *node, double *out, const double *w)
     }
 }
 
-expr *new_power(expr *child, int p)
+expr *new_power(expr *child, double p)
 {
     /* Allocate the type-specific struct */
     power_expr *pnode = (power_expr *) calloc(1, sizeof(power_expr));

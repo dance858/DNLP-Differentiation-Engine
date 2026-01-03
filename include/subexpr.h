@@ -22,7 +22,7 @@ typedef struct linear_op_expr
 typedef struct power_expr
 {
     expr base;
-    int p;
+    double p;
 } power_expr;
 
 /* Quadratic form: y = x'*Q*x */

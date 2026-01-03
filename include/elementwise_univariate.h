@@ -18,7 +18,7 @@ expr *new_tanh(expr *child);
 expr *new_asinh(expr *child);
 expr *new_atanh(expr *child);
 expr *new_logistic(expr *child);
-expr *new_power(expr *child, int p);
+expr *new_power(expr *child, double p);
 expr *new_xexp(expr *child);
 
 /* the jacobian and wsum_hess for elementwise univariate atoms are always

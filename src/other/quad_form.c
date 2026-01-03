@@ -5,13 +5,11 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* Note: Q is not freed here because it's owned by the caller */
-
 static void forward(expr *node, const double *u)
 {
     expr *x = node->left;
 
-    /* children's forward passes */
+    /* child's forward pass */
     x->forward(x, u);
 
     /* local forward pass  */
@@ -45,8 +43,7 @@ static void jacobian_init(expr *node)
     else /* x is not a variable */
     {
         /* compute required allocation and allocate jacobian */
-        bool *col_nz = (bool *) calloc(
-            node->n_vars, sizeof(bool)); /* TODO: could use iwork here instead*/
+        bool *col_nz = (bool *) calloc(node->n_vars, sizeof(bool));
         int nonzero_cols = count_nonzero_cols(x->jacobian, col_nz);
         node->jacobian = new_csr_matrix(1, node->n_vars, nonzero_cols + 1);
 
@@ -65,9 +62,6 @@ static void jacobian_init(expr *node)
 
         node->jacobian->p[0] = 0;
         node->jacobian->p[1] = node->jacobian->nnz;
-
-        /* Cast x to linear operator to use its A_csc in eval_jacobian */
-        node->iwork = (int *) malloc(sizeof(int));
     }
 }
 
@@ -109,6 +103,7 @@ expr *new_quad_form(expr *left, CSR_Matrix *Q)
     expr *node = &qnode->base;
 
     /* Initialize base fields */
+    assert(left->d2 == 1);
     init_expr(node, left->d1, 1, left->n_vars, forward, jacobian_init, eval_jacobian,
               NULL, NULL);
 
