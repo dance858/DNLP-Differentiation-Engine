@@ -43,6 +43,8 @@ expr *new_linear(expr *u, const CSR_Matrix *A)
     lin_node->A_csr = new_csr_matrix(A->m, A->n, A->nnz);
     copy_csr_matrix(A, lin_node->A_csr);
     lin_node->A_csc = csr_to_csc(A);
+
+    /* what if we have A @ phi(x). Then I don't think this is correct. */
     node->jacobian = lin_node->A_csr;
 
     return node;
