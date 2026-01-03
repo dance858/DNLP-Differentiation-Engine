@@ -109,7 +109,7 @@ static void wsum_hess_init(expr *node)
     node->dwork = malloc(x->size * sizeof(double));
 }
 
-static void eval_wsum_hess(expr *node, double *w)
+static void eval_wsum_hess(expr *node, const double *w)
 {
     expr *x = node->left;
     sum_expr *snode = (sum_expr *) node;
@@ -134,7 +134,7 @@ static void eval_wsum_hess(expr *node, double *w)
     copy_csr_matrix(x->wsum_hess, node->wsum_hess);
 }
 
-static bool is_affine(expr *node)
+static bool is_affine(const expr *node)
 {
     return node->left->is_affine(node->left);
 }

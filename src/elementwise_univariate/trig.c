@@ -20,7 +20,7 @@ static void sin_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void sin_local_wsum_hess(expr *node, double *out, double *w)
+static void sin_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
 
@@ -58,7 +58,7 @@ static void cos_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void cos_local_wsum_hess(expr *node, double *out, double *w)
+static void cos_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
 
@@ -97,7 +97,7 @@ static void tan_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void tan_local_wsum_hess(expr *node, double *out, double *w)
+static void tan_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
 

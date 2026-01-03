@@ -1,4 +1,6 @@
 #include "elementwise_univariate.h"
+#include "expr.h"
+#include "subexpr.h"
 #include <stdlib.h>
 
 void jacobian_init_elementwise(expr *node)
@@ -72,7 +74,7 @@ void wsum_hess_init_elementwise(expr *node)
     }
 }
 
-void eval_wsum_hess_elementwise(expr *node, double *w)
+void eval_wsum_hess_elementwise(expr *node, const double *w)
 {
     expr *child = node->left;
 
@@ -89,7 +91,7 @@ void eval_wsum_hess_elementwise(expr *node, double *w)
     }
 }
 
-bool is_affine_elementwise(expr *node)
+bool is_affine_elementwise(const expr *node)
 {
     (void) node;
     return false;

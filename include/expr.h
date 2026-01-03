@@ -14,10 +14,10 @@ typedef void (*forward_fn)(struct expr *node, const double *u);
 typedef void (*jacobian_init_fn)(struct expr *node);
 typedef void (*wsum_hess_init_fn)(struct expr *node);
 typedef void (*eval_jacobian_fn)(struct expr *node);
-typedef void (*wsum_hess_fn)(struct expr *node, double *w);
+typedef void (*wsum_hess_fn)(struct expr *node, const double *w);
 typedef void (*local_jacobian_fn)(struct expr *node, double *out);
-typedef void (*local_wsum_hess_fn)(struct expr *node, double *out, double *w);
-typedef bool (*is_affine_fn)(struct expr *node);
+typedef void (*local_wsum_hess_fn)(struct expr *node, double *out, const double *w);
+typedef bool (*is_affine_fn)(const struct expr *node);
 typedef void (*free_type_data_fn)(struct expr *node);
 
 /* Base expression node structure - contains only common fields */
@@ -53,6 +53,8 @@ typedef struct expr
     free_type_data_fn free_type_data;   /* Cleanup for type-specific fields */
 
 } expr;
+
+void init_expr(expr *node, int d1, int d2, int n_vars);
 
 expr *new_expr(int d1, int d2, int n_vars);
 void free_expr(expr *node);

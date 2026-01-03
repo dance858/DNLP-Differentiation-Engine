@@ -16,9 +16,6 @@ expr *new_add(expr *left, expr *right);
 /* Helper function to initialize a sum expr (can be used with derived types) */
 void init_sum(expr *node, expr *child, int d1);
 
-/* Helper function to initialize an hstack expr (can be used with derived types) */
-void init_hstack(expr *node, int d1, int d2, int n_vars);
-
 expr *new_sum(expr *child, int axis);
 expr *new_hstack(expr **args, int n_args, int n_vars);
 

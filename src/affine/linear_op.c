@@ -11,7 +11,7 @@ static void forward(expr *node, const double *u)
     csr_matvec(node->jacobian, x->value, node->value, x->var_id);
 }
 
-static bool is_affine(expr *node)
+static bool is_affine(const expr *node)
 {
     return node->left->is_affine(node->left);
 }

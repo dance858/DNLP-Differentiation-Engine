@@ -1,4 +1,5 @@
 #include "elementwise_univariate.h"
+#include "subexpr.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -28,7 +29,7 @@ static void local_jacobian(expr *node, double *vals)
     }
 }
 
-static void local_wsum_hess(expr *node, double *out, double *w)
+static void local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     double p = ((power_expr *) node)->p;

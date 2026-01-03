@@ -21,7 +21,7 @@ static void sinh_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void sinh_local_wsum_hess(expr *node, double *out, double *w)
+static void sinh_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     for (int j = 0; j < node->size; j++)
@@ -59,7 +59,7 @@ static void tanh_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void tanh_local_wsum_hess(expr *node, double *out, double *w)
+static void tanh_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     for (int j = 0; j < node->size; j++)
@@ -97,7 +97,7 @@ static void asinh_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void asinh_local_wsum_hess(expr *node, double *out, double *w)
+static void asinh_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     for (int j = 0; j < node->size; j++)
@@ -135,7 +135,7 @@ static void atanh_local_jacobian(expr *node, double *vals)
     }
 }
 
-static void atanh_local_wsum_hess(expr *node, double *out, double *w)
+static void atanh_local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     for (int j = 0; j < node->size; j++)

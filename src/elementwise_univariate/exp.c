@@ -19,7 +19,7 @@ static void local_jacobian(expr *node, double *vals)
     memcpy(vals, node->value, node->size * sizeof(double));
 }
 
-static void local_wsum_hess(expr *node, double *out, double *w)
+static void local_wsum_hess(expr *node, double *out, const double *w)
 {
     double *x = node->left->value;
     for (int j = 0; j < node->size; j++)

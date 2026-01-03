@@ -2,7 +2,6 @@
 #define ELEMENTWISE_H
 
 #include "expr.h"
-#include "subexpr.h"
 
 /* Helper function to initialize an elementwise expr (can be used with derived types)
  */
@@ -27,11 +26,11 @@ expr *new_xexp(expr *child);
 void jacobian_init_elementwise(expr *node);
 void eval_jacobian_elementwise(expr *node);
 void wsum_hess_init_elementwise(expr *node);
-void eval_wsum_hess_elementwise(expr *node, double *w);
+void eval_wsum_hess_elementwise(expr *node, const double *w);
 expr *new_elementwise(expr *child);
 
 /* no elementwise atoms are affine according to our convention,
    so we can have a common implementation */
-bool is_affine_elementwise(expr *node);
+bool is_affine_elementwise(const expr *node);
 
 #endif /* ELEMENTWISE_UNIVARIATE_H */
