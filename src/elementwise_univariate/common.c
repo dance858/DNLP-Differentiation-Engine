@@ -103,39 +103,23 @@ bool is_affine_elementwise(const expr *node)
  */
 void init_elementwise(expr *node, expr *child)
 {
-    /* Initialize dimensions from child */
-    node->d1 = child->d1;
-    node->d2 = child->d2;
-    node->size = child->d1 * child->d2;
-    node->n_vars = child->n_vars;
-    node->var_id = -1;
-    node->refcount = 1;
+    /* Initialize base fields */
+    init_expr(node, child->d1, child->d2, child->n_vars, NULL,
+              jacobian_init_elementwise, eval_jacobian_elementwise,
+              is_affine_elementwise, NULL);
 
-    /* Allocate the value array */
-    node->value = (double *) calloc(node->size, sizeof(double));
-
-    node->left = child;
-    node->right = NULL;
-    node->dwork = NULL;
-    node->iwork = NULL;
-    node->jacobian = NULL;
-    node->wsum_hess = NULL;
-    node->jacobian_init = jacobian_init_elementwise;
+    /* Set wsum_hess functions */
     node->wsum_hess_init = wsum_hess_init_elementwise;
-    node->eval_jacobian = eval_jacobian_elementwise;
     node->eval_wsum_hess = eval_wsum_hess_elementwise;
-    node->local_jacobian = NULL;
-    node->local_wsum_hess = NULL;
-    node->is_affine = is_affine_elementwise;
-    node->forward = NULL;
-    node->free_type_data = NULL;
 
+    /* Set left child */
+    node->left = child;
     expr_retain(child);
 }
 
 expr *new_elementwise(expr *child)
 {
-    expr *node = (expr *) malloc(sizeof(expr));
+    expr *node = (expr *) calloc(1, sizeof(expr));
     if (!node) return NULL;
 
     init_elementwise(node, child);

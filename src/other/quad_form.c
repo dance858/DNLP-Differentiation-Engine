@@ -103,40 +103,18 @@ static void eval_jacobian(expr *node)
     }
 }
 
-/* Helper function to initialize a quad_form expr */
-void init_quad_form(expr *node, expr *child)
-{
-    node->d1 = child->d1;
-    node->d2 = 1;
-    node->size = child->d1 * 1;
-    node->n_vars = child->n_vars;
-    node->var_id = -1;
-    node->refcount = 1;
-    node->left = child;
-    node->right = NULL;
-    node->dwork = NULL;
-    node->iwork = NULL;
-    node->value = (double *) calloc(node->size, sizeof(double));
-    node->jacobian = NULL;
-    node->wsum_hess = NULL;
-    node->jacobian_init = jacobian_init;
-    node->wsum_hess_init = NULL;
-    node->eval_jacobian = eval_jacobian;
-    node->eval_wsum_hess = NULL;
-    node->local_jacobian = NULL;
-    node->local_wsum_hess = NULL;
-    node->is_affine = NULL;
-    node->forward = forward;
-    node->free_type_data = NULL;
-
-    expr_retain(child);
-}
-
 expr *new_quad_form(expr *left, CSR_Matrix *Q)
 {
-    quad_form_expr *qnode = (quad_form_expr *) malloc(sizeof(quad_form_expr));
+    quad_form_expr *qnode = (quad_form_expr *) calloc(1, sizeof(quad_form_expr));
     expr *node = &qnode->base;
-    init_quad_form(node, left);
+
+    /* Initialize base fields */
+    init_expr(node, left->d1, 1, left->n_vars, forward, jacobian_init, eval_jacobian,
+              NULL, NULL);
+
+    /* Set left child */
+    node->left = left;
+    expr_retain(left);
 
     /* Set type-specific field */
     qnode->Q = Q;

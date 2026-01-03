@@ -54,7 +54,9 @@ typedef struct expr
 
 } expr;
 
-void init_expr(expr *node, int d1, int d2, int n_vars);
+void init_expr(expr *node, int d1, int d2, int n_vars, forward_fn forward,
+               jacobian_init_fn jacobian_init, eval_jacobian_fn eval_jacobian,
+               is_affine_fn is_affine, free_type_data_fn free_type_data);
 
 expr *new_expr(int d1, int d2, int n_vars);
 void free_expr(expr *node);

@@ -115,16 +115,8 @@ expr *new_hstack(expr **args, int n_args, int n_vars)
     /* Allocate the type-specific struct */
     hstack_expr *hnode = (hstack_expr *) calloc(1, sizeof(hstack_expr));
     expr *node = &hnode->base;
-
-    /* Initialize basic fields */
-    init_expr(node, args[0]->d1, d2, n_vars);
-
-    /* Set function pointers */
-    node->forward = forward;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
-    node->is_affine = is_affine;
-    node->free_type_data = free_type_data;
+    init_expr(node, args[0]->d1, d2, n_vars, forward, jacobian_init, eval_jacobian,
+              is_affine, free_type_data);
 
     /* Set type-specific fields */
     hnode->args = args;

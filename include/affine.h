@@ -5,10 +5,6 @@
 #include "subexpr.h"
 #include "utils/CSR_Matrix.h"
 
-/* Helper function to initialize a linear operator expr (can be used with derived
- * types) */
-void init_linear_op(expr *node, expr *child, int d1, int d2);
-
 expr *new_linear(expr *u, const CSR_Matrix *A);
 
 expr *new_add(expr *left, expr *right);

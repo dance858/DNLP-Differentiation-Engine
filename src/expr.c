@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void init_expr(expr *node, int d1, int d2, int n_vars)
+void init_expr(expr *node, int d1, int d2, int n_vars, forward_fn forward,
+               jacobian_init_fn jacobian_init, eval_jacobian_fn eval_jacobian,
+               is_affine_fn is_affine, free_type_data_fn free_type_data)
 {
     node->d1 = d1;
     node->d2 = d2;
@@ -12,12 +14,17 @@ void init_expr(expr *node, int d1, int d2, int n_vars)
     node->refcount = 1;
     node->value = (double *) calloc(d1 * d2, sizeof(double));
     node->var_id = -1;
+    node->forward = forward;
+    node->jacobian_init = jacobian_init;
+    node->eval_jacobian = eval_jacobian;
+    node->is_affine = is_affine;
+    node->free_type_data = free_type_data;
 }
 
 expr *new_expr(int d1, int d2, int n_vars)
 {
     expr *node = (expr *) calloc(1, sizeof(expr));
-    init_expr(node, d1, d2, n_vars);
+    init_expr(node, d1, d2, n_vars, NULL, NULL, NULL, NULL, NULL);
     return node;
 }
 
