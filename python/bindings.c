@@ -178,6 +178,65 @@ static PyObject *py_forward(PyObject *self, PyObject *args)
     return out;
 }
 
+static PyObject *py_jacobian(PyObject *self, PyObject *args)
+{
+    PyObject *node_capsule;
+    PyObject *u_obj;
+    if (!PyArg_ParseTuple(args, "OO", &node_capsule, &u_obj))
+    {
+        return NULL;
+    }
+
+    expr *node = (expr *) PyCapsule_GetPointer(node_capsule, EXPR_CAPSULE_NAME);
+    if (!node)
+    {
+        PyErr_SetString(PyExc_ValueError, "invalid node capsule");
+        return NULL;
+    }
+
+    PyArrayObject *u_array =
+        (PyArrayObject *) PyArray_FROM_OTF(u_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (!u_array)
+    {
+        return NULL;
+    }
+
+    // Run forward pass first (required before jacobian)
+    node->forward(node, (const double *) PyArray_DATA(u_array));
+
+    // Initialize and evaluate jacobian
+    node->jacobian_init(node);
+    node->eval_jacobian(node);
+
+    CSR_Matrix *jac = node->jacobian;
+
+    // Create numpy arrays for CSR components
+    npy_intp nnz = jac->nnz;
+    npy_intp m_plus_1 = jac->m + 1;
+
+    PyObject *data = PyArray_SimpleNew(1, &nnz, NPY_DOUBLE);
+    PyObject *indices = PyArray_SimpleNew(1, &nnz, NPY_INT32);
+    PyObject *indptr = PyArray_SimpleNew(1, &m_plus_1, NPY_INT32);
+
+    if (!data || !indices || !indptr)
+    {
+        Py_XDECREF(data);
+        Py_XDECREF(indices);
+        Py_XDECREF(indptr);
+        Py_DECREF(u_array);
+        return NULL;
+    }
+
+    memcpy(PyArray_DATA((PyArrayObject *) data), jac->x, nnz * sizeof(double));
+    memcpy(PyArray_DATA((PyArrayObject *) indices), jac->i, nnz * sizeof(int));
+    memcpy(PyArray_DATA((PyArrayObject *) indptr), jac->p, m_plus_1 * sizeof(int));
+
+    Py_DECREF(u_array);
+
+    // Return tuple: (data, indices, indptr, shape)
+    return Py_BuildValue("(OOO(ii))", data, indices, indptr, jac->m, jac->n);
+}
+
 static PyMethodDef DNLPMethods[] = {
     {"make_variable", py_make_variable, METH_VARARGS, "Create variable node"},
     {"make_log", py_make_log, METH_VARARGS, "Create log node"},
@@ -185,6 +244,7 @@ static PyMethodDef DNLPMethods[] = {
     {"make_add", py_make_add, METH_VARARGS, "Create add node"},
     {"make_sum", py_make_sum, METH_VARARGS, "Create sum node"},
     {"forward", py_forward, METH_VARARGS, "Run forward pass and return values"},
+    {"jacobian", py_jacobian, METH_VARARGS, "Compute jacobian and return CSR components"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef dnlp_module = {PyModuleDef_HEAD_INIT, "DNLP_diff_engine",

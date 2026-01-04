@@ -1,7 +1,14 @@
 import cvxpy as cp
 import numpy as np
+from scipy import sparse
 from cvxpy.reductions.inverse_data import InverseData
 import DNLP_diff_engine as diffengine
+
+
+def get_jacobian(c_expr, values):
+    """Compute jacobian and return as scipy sparse CSR matrix."""
+    data, indices, indptr, shape = diffengine.jacobian(c_expr, values)
+    return sparse.csr_matrix((data, indices, indptr), shape=shape)
 
 
 def _chain_add(children):
@@ -41,7 +48,7 @@ def build_variable_dict(variables: list) -> tuple[dict, int]:
 
     var_dict = {}
     for var in variables:
-        offset, size = id_map[var.id]
+        offset, _ = id_map[var.id]
         shape = var_shapes[var.id]
         if len(shape) == 2:
             d1, d2 = shape[0], shape[1]
@@ -52,7 +59,7 @@ def build_variable_dict(variables: list) -> tuple[dict, int]:
         c_var = diffengine.make_variable(d1, d2, offset, n_vars)
         var_dict[var.id] = c_var
 
-    return var_dict, n_vars
+    return var_dict
 
 
 def _convert_expr(expr, var_dict: dict):
@@ -85,7 +92,7 @@ def convert_problem(problem: cp.Problem) -> tuple:
         c_objective: C expression for objective
         c_constraints: list of C expressions for constraints
     """
-    var_dict, _ = build_variable_dict(problem.variables())
+    var_dict = build_variable_dict(problem.variables())
 
     # Convert objective
     c_objective = _convert_expr(problem.objective.expr, var_dict)
@@ -99,66 +106,40 @@ def convert_problem(problem: cp.Problem) -> tuple:
     return c_objective, c_constraints
 
 
-def cvxpy_expr_to_C(expr):
-    """
-    Convert a standalone CVXPY expression to C.
-    Collects variables from the expression and builds variable dict.
-    """
-    # Collect variables
-    variables = []
-    seen_ids = set()
+# === Tests ===
 
-    def collect_vars(e):
-        if isinstance(e, cp.Variable):
-            if e.id not in seen_ids:
-                variables.append(e)
-                seen_ids.add(e.id)
-        elif hasattr(e, 'args'):
-            for arg in e.args:
-                collect_vars(arg)
-
-    collect_vars(expr)
-
-    var_dict, _ = build_variable_dict(variables)
-    return _convert_expr(expr, var_dict)
-
-
-# === Problem-based tests ===
-
-def test_problem_simple_sum_log():
+def test_simple_sum_log():
     """Test converting cp.sum(cp.log(x))."""
     x = cp.Variable(3)
     problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x))))
-    c_obj, c_constrs = convert_problem(problem)
+    c_obj, _ = convert_problem(problem)
 
     test_values = np.array([1.0, 2.0, 3.0])
     result = diffengine.forward(c_obj, test_values)
     expected = np.sum(np.log(test_values))
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_problem_simple_sum_log passed")
+    print("test_simple_sum_log passed")
 
 
-def test_problem_two_variables():
+def test_two_variables():
     """Test problem with two variables: sum(log(x + y))."""
     x = cp.Variable(2)
     y = cp.Variable(2)
     problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x + y))))
-    c_obj, c_constrs = convert_problem(problem)
+    c_obj, _ = convert_problem(problem)
 
-    # Variables flattened: [x0, x1, y0, y1]
     test_values = np.array([1.0, 2.0, 3.0, 4.0])
     result = diffengine.forward(c_obj, test_values)
     expected = np.sum(np.log(np.array([1+3, 2+4])))
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_problem_two_variables passed")
+    print("test_two_variables passed")
 
 
 def test_variable_reuse():
     """Test that same variable used twice works correctly."""
     x = cp.Variable(2)
-    # log(x) + exp(x) uses x twice
     problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x) + cp.exp(x))))
-    c_obj, c_constrs = convert_problem(problem)
+    c_obj, _ = convert_problem(problem)
 
     test_values = np.array([1.0, 2.0])
     result = diffengine.forward(c_obj, test_values)
@@ -166,60 +147,6 @@ def test_variable_reuse():
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
     print("test_variable_reuse passed")
 
-
-# === Standalone expression tests ===
-
-def test_log_conversion():
-    """Test converting CVXPY log expression to C diff engine."""
-    x = cp.Variable(3)
-    c_expr = cvxpy_expr_to_C(cp.log(x))
-
-    test_values = np.array([1.0, 2.0, 3.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = np.log(test_values)
-    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_log_conversion passed")
-
-
-def test_exp_conversion():
-    """Test converting CVXPY exp expression to C diff engine."""
-    x = cp.Variable(3)
-    c_expr = cvxpy_expr_to_C(cp.exp(x))
-
-    test_values = np.array([0.0, 1.0, 2.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = np.exp(test_values)
-    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_exp_conversion passed")
-
-
-def test_add_conversion():
-    """Test converting CVXPY addition expression to C diff engine."""
-    x = cp.Variable(3)
-    y = cp.Variable(3)
-    c_expr = cvxpy_expr_to_C(x + y)
-
-    test_values = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = test_values[:3] + test_values[3:]
-    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_add_conversion passed")
-
-
-def test_composite_expression():
-    """Test converting a composite CVXPY expression: log(exp(x) + y)."""
-    x = cp.Variable(2)
-    y = cp.Variable(2)
-    c_expr = cvxpy_expr_to_C(cp.log(cp.exp(x) + y))
-
-    test_values = np.array([1.0, 2.0, 0.5, 1.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = np.log(np.exp(test_values[:2]) + test_values[2:])
-    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_composite_expression passed")
-
-
-# === Complex tests ===
 
 def test_four_variables():
     """Test problem with 4 variables: sum(log(a + b) + exp(c + d))."""
@@ -230,7 +157,6 @@ def test_four_variables():
     problem = cp.Problem(cp.Minimize(cp.sum(cp.log(a + b) + cp.exp(c + d))))
     c_obj, _ = convert_problem(problem)
 
-    # Variables flattened: [a0,a1,a2, b0,b1,b2, c0,c1,c2, d0,d1,d2]
     a_vals = np.array([1.0, 2.0, 3.0])
     b_vals = np.array([0.5, 1.0, 1.5])
     c_vals = np.array([0.1, 0.2, 0.3])
@@ -244,26 +170,26 @@ def test_four_variables():
 
 
 def test_deep_nesting():
-    """Test deeply nested composition: log(exp(log(exp(x))))."""
+    """Test deeply nested composition: sum(log(exp(log(exp(x)))))."""
     x = cp.Variable(4)
-    expr = cp.log(cp.exp(cp.log(cp.exp(x))))
-    c_expr = cvxpy_expr_to_C(expr)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(cp.exp(cp.log(cp.exp(x)))))))
+    c_obj, _ = convert_problem(problem)
 
     test_values = np.array([0.5, 1.0, 1.5, 2.0])
-    result = diffengine.forward(c_expr, test_values)
-    # log(exp(log(exp(x)))) = log(exp(x)) = x (for positive x)
-    expected = np.log(np.exp(np.log(np.exp(test_values))))
+    result = diffengine.forward(c_obj, test_values)
+    expected = np.sum(np.log(np.exp(np.log(np.exp(test_values)))))
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
     print("test_deep_nesting passed")
 
 
 def test_chained_additions():
-    """Test multiple chained additions: x + y + z + w."""
+    """Test multiple chained additions: sum(x + y + z + w)."""
     x = cp.Variable(2)
     y = cp.Variable(2)
     z = cp.Variable(2)
     w = cp.Variable(2)
-    c_expr = cvxpy_expr_to_C(x + y + z + w)
+    problem = cp.Problem(cp.Minimize(cp.sum(x + y + z + w)))
+    c_obj, _ = convert_problem(problem)
 
     x_vals = np.array([1.0, 2.0])
     y_vals = np.array([3.0, 4.0])
@@ -271,21 +197,21 @@ def test_chained_additions():
     w_vals = np.array([7.0, 8.0])
     test_values = np.concatenate([x_vals, y_vals, z_vals, w_vals])
 
-    result = diffengine.forward(c_expr, test_values)
-    expected = x_vals + y_vals + z_vals + w_vals
+    result = diffengine.forward(c_obj, test_values)
+    expected = np.sum(x_vals + y_vals + z_vals + w_vals)
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
     print("test_chained_additions passed")
 
 
 def test_variable_used_multiple_times():
-    """Test variable used 3+ times: log(x) + exp(x) + x."""
+    """Test variable used 3+ times: sum(log(x) + exp(x) + x)."""
     x = cp.Variable(3)
-    expr = cp.log(x) + cp.exp(x) + x
-    c_expr = cvxpy_expr_to_C(expr)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x) + cp.exp(x) + x)))
+    c_obj, _ = convert_problem(problem)
 
     test_values = np.array([1.0, 2.0, 3.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = np.log(test_values) + np.exp(test_values) + test_values
+    result = diffengine.forward(c_obj, test_values)
+    expected = np.sum(np.log(test_values) + np.exp(test_values) + test_values)
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
     print("test_variable_used_multiple_times passed")
 
@@ -309,7 +235,6 @@ def test_matrix_variable():
     problem = cp.Problem(cp.Minimize(cp.sum(cp.log(X))))
     c_obj, _ = convert_problem(problem)
 
-    # Matrix flattened in column-major (Fortran) order by CVXPY
     test_values = np.arange(1.0, 13.0)  # 12 elements
     result = diffengine.forward(c_obj, test_values)
     expected = np.sum(np.log(test_values))
@@ -322,17 +247,15 @@ def test_mixed_sizes():
     a = cp.Variable(2)
     b = cp.Variable(5)
     c = cp.Variable(3)
-
-    # sum of each variable's log, then sum all
-    expr = cp.sum(cp.log(a)) + cp.sum(cp.log(b)) + cp.sum(cp.log(c))
-    c_expr = cvxpy_expr_to_C(expr)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(a)) + cp.sum(cp.log(b)) + cp.sum(cp.log(c))))
+    c_obj, _ = convert_problem(problem)
 
     a_vals = np.array([1.0, 2.0])
     b_vals = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     c_vals = np.array([1.0, 2.0, 3.0])
     test_values = np.concatenate([a_vals, b_vals, c_vals])
 
-    result = diffengine.forward(c_expr, test_values)
+    result = diffengine.forward(c_obj, test_values)
     expected = np.sum(np.log(a_vals)) + np.sum(np.log(b_vals)) + np.sum(np.log(c_vals))
     assert np.allclose(result, expected), f"Expected {expected}, got {result}"
     print("test_mixed_sizes passed")
@@ -343,7 +266,6 @@ def test_complex_objective():
     x = cp.Variable(3)
     y = cp.Variable(3)
     z = cp.Variable(3)
-
     obj = cp.sum(cp.log(x + y)) + cp.sum(cp.exp(y + z)) + cp.sum(cp.log(z + x))
     problem = cp.Problem(cp.Minimize(obj))
     c_obj, _ = convert_problem(problem)
@@ -361,33 +283,157 @@ def test_complex_objective():
     print("test_complex_objective passed")
 
 
-def test_nested_sums():
-    """Test sum of sum (should collapse to single sum)."""
+def test_log_exp_identity():
+    """Test log(exp(x)) = x identity."""
+    x = cp.Variable(5)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(cp.exp(x)))))
+    c_obj, _ = convert_problem(problem)
+
+    test_values = np.array([-1.0, 0.0, 1.0, 2.0, 3.0])
+    result = diffengine.forward(c_obj, test_values)
+    expected = np.sum(test_values)  # log(exp(x)) = x
+    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
+    print("test_log_exp_identity passed")
+
+
+# === Jacobian Tests ===
+
+def test_jacobian_sum_log():
+    """Test jacobian of sum(log(x)). Gradient is [1/x_1, 1/x_2, ...]."""
     x = cp.Variable(4)
-    # sum(sum(log(x))) - outer sum is over a scalar, so effectively just sum(log(x))
-    expr = cp.sum(cp.log(x))
-    c_expr = cvxpy_expr_to_C(expr)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x))))
+    c_obj, _ = convert_problem(problem)
 
     test_values = np.array([1.0, 2.0, 3.0, 4.0])
-    result = diffengine.forward(c_expr, test_values)
-    expected = np.sum(np.log(test_values))
-    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
-    print("test_nested_sums passed")
+    jac = get_jacobian(c_obj, test_values)
+
+    # sum(log(x)) is scalar, so jacobian is 1 x n
+    expected = (1.0 / test_values).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_sum_log passed")
+
+
+def test_jacobian_sum_exp():
+    """Test jacobian of sum(exp(x)). Gradient is [exp(x_1), exp(x_2), ...]."""
+    x = cp.Variable(3)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.exp(x))))
+    c_obj, _ = convert_problem(problem)
+
+    test_values = np.array([0.0, 1.0, 2.0])
+    jac = get_jacobian(c_obj, test_values)
+
+    expected = np.exp(test_values).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_sum_exp passed")
+
+
+def test_jacobian_four_variables():
+    """Test jacobian of sum(log(a)) + sum(log(b)) + sum(exp(c)) + sum(exp(d))."""
+    a = cp.Variable(2)
+    b = cp.Variable(2)
+    c = cp.Variable(2)
+    d = cp.Variable(2)
+    obj = cp.sum(cp.log(a)) + cp.sum(cp.log(b)) + cp.sum(cp.exp(c)) + cp.sum(cp.exp(d))
+    problem = cp.Problem(cp.Minimize(obj))
+    c_obj, _ = convert_problem(problem)
+
+    # Variables: [a0, a1, b0, b1, c0, c1, d0, d1]
+    a_vals = np.array([1.0, 2.0])
+    b_vals = np.array([0.5, 1.0])
+    c_vals = np.array([0.1, 0.2])
+    d_vals = np.array([0.1, 0.1])
+    test_values = np.concatenate([a_vals, b_vals, c_vals, d_vals])
+    jac = get_jacobian(c_obj, test_values)
+
+    # f = sum(log(a)) + sum(log(b)) + sum(exp(c)) + sum(exp(d))
+    df_da = 1.0 / a_vals
+    df_db = 1.0 / b_vals
+    df_dc = np.exp(c_vals)
+    df_dd = np.exp(d_vals)
+    expected = np.concatenate([df_da, df_db, df_dc, df_dd]).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_four_variables passed")
+
+
+def test_jacobian_two_variables():
+    """Test jacobian of sum(log(x) + log(y)) with two variables."""
+    x = cp.Variable(2)
+    y = cp.Variable(2)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x) + cp.log(y))))
+    c_obj, _ = convert_problem(problem)
+
+    # Variables: [x0, x1, y0, y1]
+    test_values = np.array([1.0, 2.0, 3.0, 4.0])
+    jac = get_jacobian(c_obj, test_values)
+
+    # f = sum(log(x) + log(y)) = log(x0) + log(x1) + log(y0) + log(y1)
+    # df/dx = [1/x0, 1/x1], df/dy = [1/y0, 1/y1]
+    expected = np.array([[1/1, 1/2, 1/3, 1/4]])
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_two_variables passed")
+
+
+def test_jacobian_variable_reuse():
+    """Test jacobian when same variable is used multiple times."""
+    x = cp.Variable(2)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x) + cp.exp(x))))
+    c_obj, _ = convert_problem(problem)
+
+    test_values = np.array([1.0, 2.0])
+    jac = get_jacobian(c_obj, test_values)
+
+    # f = sum(log(x) + exp(x))
+    # df/dx_i = 1/x_i + exp(x_i)
+    expected = (1.0 / test_values + np.exp(test_values)).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_variable_reuse passed")
+
+
+def test_jacobian_large_variable():
+    """Test jacobian of sum(log(x)) with larger variable."""
+    x = cp.Variable(10)
+    problem = cp.Problem(cp.Minimize(cp.sum(cp.log(x))))
+    c_obj, _ = convert_problem(problem)
+
+    test_values = np.linspace(1.0, 10.0, 10)
+    jac = get_jacobian(c_obj, test_values)
+
+    # f = sum(log(x)), df/dx_i = 1/x_i
+    expected = (1.0 / test_values).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_large_variable passed")
+
+
+def test_jacobian_complex_objective():
+    """Test jacobian of sum(log(x) + exp(y) + log(z))."""
+    x = cp.Variable(2)
+    y = cp.Variable(2)
+    z = cp.Variable(2)
+    obj = cp.sum(cp.log(x) + cp.exp(y) + cp.log(z))
+    problem = cp.Problem(cp.Minimize(obj))
+    c_obj, _ = convert_problem(problem)
+
+    x_vals = np.array([1.0, 2.0])
+    y_vals = np.array([0.5, 1.0])
+    z_vals = np.array([0.2, 0.3])
+    test_values = np.concatenate([x_vals, y_vals, z_vals])
+    jac = get_jacobian(c_obj, test_values)
+
+    # f = sum(log(x) + exp(y) + log(z))
+    # df/dx_i = 1/x_i, df/dy_i = exp(y_i), df/dz_i = 1/z_i
+    df_dx = 1.0 / x_vals
+    df_dy = np.exp(y_vals)
+    df_dz = 1.0 / z_vals
+    expected = np.concatenate([df_dx, df_dy, df_dz]).reshape(1, -1)
+    assert np.allclose(jac.toarray(), expected), f"Expected {expected}, got {jac.toarray()}"
+    print("test_jacobian_complex_objective passed")
 
 
 if __name__ == "__main__":
-    # Problem-based tests
-    test_problem_simple_sum_log()
-    test_problem_two_variables()
+    # Forward pass tests
+    test_simple_sum_log()
+    test_two_variables()
     test_variable_reuse()
-
-    # Standalone expression tests
-    test_log_conversion()
-    test_exp_conversion()
-    test_add_conversion()
-    test_composite_expression()
-
-    # Complex tests
     test_four_variables()
     test_deep_nesting()
     test_chained_additions()
@@ -396,6 +442,15 @@ if __name__ == "__main__":
     test_matrix_variable()
     test_mixed_sizes()
     test_complex_objective()
-    test_nested_sums()
+    test_log_exp_identity()
+
+    # Jacobian tests
+    test_jacobian_sum_log()
+    test_jacobian_sum_exp()
+    test_jacobian_four_variables()
+    test_jacobian_two_variables()
+    test_jacobian_variable_reuse()
+    test_jacobian_large_variable()
+    test_jacobian_complex_objective()
 
     print("\nAll tests passed!")
