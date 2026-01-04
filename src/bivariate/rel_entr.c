@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 // --------------------------------------------------------------------
 // Implementation of relative entropy when both arguments are vectors.
