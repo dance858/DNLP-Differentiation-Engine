@@ -29,6 +29,7 @@
 #include "wsum_hess/elementwise/test_power.h"
 #include "wsum_hess/elementwise/test_trig.h"
 #include "wsum_hess/elementwise/test_xexp.h"
+#include "wsum_hess/test_hstack.h"
 #include "wsum_hess/test_rel_entr.h"
 #include "wsum_hess/test_sum.h"
 
@@ -98,6 +99,8 @@ int main(void)
     mu_run_test(test_wsum_hess_sum_log_axis1, tests_run);
     mu_run_test(test_wsum_hess_rel_entr_1, tests_run);
     mu_run_test(test_wsum_hess_rel_entr_2, tests_run);
+    mu_run_test(test_wsum_hess_hstack, tests_run);
+    mu_run_test(test_wsum_hess_hstack_matrix, tests_run);
 
     printf("\n--- Utility Tests ---\n");
     mu_run_test(test_diag_csr_mult, tests_run);

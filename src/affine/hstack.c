@@ -37,7 +37,7 @@ static void jacobian_init(expr *node)
 
     node->jacobian = new_csr_matrix(node->size, node->n_vars, nnz);
 
-    /* precompute sparsity pattern of this jacobian's node */
+    /* precompute sparsity pattern of this node's jacobian */
     int row_offset = 0;
     CSR_Matrix *A = node->jacobian;
     A->nnz = 0;
@@ -77,6 +77,40 @@ static void eval_jacobian(expr *node)
         memcpy(A->x + A->nnz, child->jacobian->x,
                child->jacobian->nnz * sizeof(double));
         A->nnz += child->jacobian->nnz;
+    }
+}
+
+static void wsum_hess_init(expr *node)
+{
+    /* initialize children's hessians */
+    hstack_expr *hnode = (hstack_expr *) node;
+    int nnz = 0;
+    for (int i = 0; i < hnode->n_args; i++)
+    {
+        hnode->args[i]->wsum_hess_init(hnode->args[i]);
+        nnz += hnode->args[i]->wsum_hess->nnz;
+    }
+
+    /* worst-case scenario the nnz of node->wsum_hess is the sum of children's
+       nnz */
+    node->wsum_hess = new_csr_matrix(node->n_vars, node->n_vars, nnz);
+    hnode->CSR_work = new_csr_matrix(node->n_vars, node->n_vars, nnz);
+}
+
+static void wsum_hess_eval(expr *node, const double *w)
+{
+    hstack_expr *hnode = (hstack_expr *) node;
+    CSR_Matrix *H = node->wsum_hess;
+    int row_offset = 0;
+    H->nnz = 0;
+
+    for (int i = 0; i < hnode->n_args; i++)
+    {
+        expr *child = hnode->args[i];
+        child->eval_wsum_hess(child, w + row_offset);
+        copy_csr_matrix(H, hnode->CSR_work);
+        sum_csr_matrices(hnode->CSR_work, child->wsum_hess, H);
+        row_offset += child->size;
     }
 }
 
@@ -121,6 +155,8 @@ expr *new_hstack(expr **args, int n_args, int n_vars)
     /* Set type-specific fields */
     hnode->args = args;
     hnode->n_args = n_args;
+    node->wsum_hess_init = wsum_hess_init;
+    node->eval_wsum_hess = wsum_hess_eval;
 
     for (int i = 0; i < n_args; i++)
     {

@@ -99,6 +99,9 @@ void diag_csr_mult(const double *d, const CSR_Matrix *A, CSR_Matrix *C)
 
 void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
 {
+    /* A and B must be different from C */
+    assert(A != C && B != C);
+
     C->nnz = 0;
 
     for (int row = 0; row < A->m; row++)
@@ -138,8 +141,8 @@ void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
         if (a_ptr < a_end)
         {
             int a_remaining = a_end - a_ptr;
-            memmove(C->i + C->nnz, A->i + a_ptr, a_remaining * sizeof(int));
-            memmove(C->x + C->nnz, A->x + a_ptr, a_remaining * sizeof(double));
+            memcpy(C->i + C->nnz, A->i + a_ptr, a_remaining * sizeof(int));
+            memcpy(C->x + C->nnz, A->x + a_ptr, a_remaining * sizeof(double));
             C->nnz += a_remaining;
         }
 
@@ -147,8 +150,8 @@ void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
         if (b_ptr < b_end)
         {
             int b_remaining = b_end - b_ptr;
-            memmove(C->i + C->nnz, B->i + b_ptr, b_remaining * sizeof(int));
-            memmove(C->x + C->nnz, B->x + b_ptr, b_remaining * sizeof(double));
+            memcpy(C->i + C->nnz, B->i + b_ptr, b_remaining * sizeof(int));
+            memcpy(C->x + C->nnz, B->x + b_ptr, b_remaining * sizeof(double));
             C->nnz += b_remaining;
         }
     }
