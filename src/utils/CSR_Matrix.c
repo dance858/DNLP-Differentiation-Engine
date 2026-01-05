@@ -492,7 +492,7 @@ void AT_fill_values(const CSR_Matrix *A, CSR_Matrix *AT, int *iwork)
     /* Fill values of A^T given sparsity pattern is already computed */
     int i, j;
     int *count = iwork;
-    memcpy(count, AT->p, (A->n + 1) * sizeof(int));
+    memcpy(count, AT->p, A->n * sizeof(int));
 
     /* Fill values by placing each element of A into its transposed position */
     for (i = 0; i < A->m; ++i)
