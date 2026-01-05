@@ -55,7 +55,8 @@ void diag_csr_mult(const double *d, const CSR_Matrix *A, CSR_Matrix *C);
 
 /* Compute C = A + B where A, B, C are CSR matrices
  * A and B must have same dimensions
- * C must be pre-allocated with sufficient nnz capacity */
+ * C must be pre-allocated with sufficient nnz capacity.
+ * C must be different from A and B */
 void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C);
 
 /* Compute C = diag(d1) * A + diag(d2) * B where A, B, C are CSR matrices */

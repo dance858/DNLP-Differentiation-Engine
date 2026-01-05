@@ -27,7 +27,7 @@ static void jacobian_init(expr *node)
 {
     /* if a child is a variable we initialize its jacobian for a
        short chain rule implementation */
-    if (node->left->var_id != -1)
+    if (node->left->var_id != NOT_A_VARIABLE)
     {
         node->left->jacobian_init(node->left);
     }

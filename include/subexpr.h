@@ -46,6 +46,7 @@ typedef struct hstack_expr
     expr base;
     expr **args;
     int n_args;
+    CSR_Matrix *CSR_work; /* for summing Hessians of children */
 } hstack_expr;
 
 #endif /* SUBEXPR_H */
