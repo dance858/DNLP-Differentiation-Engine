@@ -150,4 +150,79 @@ const char *test_problem_jacobian(void)
     return 0;
 }
 
+/*
+ * Test problem_jacobian with multiple constraints and SHARED variable:
+ *   Constraint 1: log(x) -> Jacobian diag([1/x1, 1/x2])
+ *   Constraint 2: exp(x) -> Jacobian diag([exp(x1), exp(x2)])
+ *
+ * Stacked jacobian (4x2):
+ *   [ 1/x1    0    ]
+ *   [  0    1/x2   ]
+ *   [exp(x1)  0    ]
+ *   [  0    exp(x2)]
+ *
+ * Note: All expressions share the same variable node x, testing that
+ * free_problem correctly handles shared nodes without double-free.
+ */
+const char *test_problem_jacobian_multi(void)
+{
+    int n_vars = 2;
+
+    /* Single shared variable used across all expressions */
+    expr *x = new_variable(2, 1, 0, n_vars);
+
+    /* Objective: sum(log(x)) */
+    expr *log_obj = new_log(x);
+    expr *objective = new_sum(log_obj, -1);
+
+    /* Constraint 1: log(x) - shares x */
+    expr *log_c1 = new_log(x);
+
+    /* Constraint 2: exp(x) - shares x */
+    expr *exp_c2 = new_exp(x);
+
+    expr *constraints[2] = {log_c1, exp_c2};
+
+    problem *prob = new_problem(objective, constraints, 2);
+
+    double u[2] = {2.0, 4.0};
+    problem_allocate(prob, u);
+    problem_forward(prob, u);
+
+    CSR_Matrix *jac = problem_jacobian(prob, u);
+
+    /* Check dimensions: 4 rows (2 + 2), 2 cols */
+    mu_assert("jac rows wrong", jac->m == 4);
+    mu_assert("jac cols wrong", jac->n == 2);
+    mu_assert("jac nnz wrong", jac->nnz == 4);
+
+    /* Check row pointers: each row has 1 element */
+    mu_assert("jac->p[0] wrong", jac->p[0] == 0);
+    mu_assert("jac->p[1] wrong", jac->p[1] == 1);
+    mu_assert("jac->p[2] wrong", jac->p[2] == 2);
+    mu_assert("jac->p[3] wrong", jac->p[3] == 3);
+    mu_assert("jac->p[4] wrong", jac->p[4] == 4);
+
+    /* Check column indices: diagonal pattern */
+    mu_assert("jac->i[0] wrong", jac->i[0] == 0);
+    mu_assert("jac->i[1] wrong", jac->i[1] == 1);
+    mu_assert("jac->i[2] wrong", jac->i[2] == 0);
+    mu_assert("jac->i[3] wrong", jac->i[3] == 1);
+
+    /* Check values:
+     * Row 0: 1/2 = 0.5
+     * Row 1: 1/4 = 0.25
+     * Row 2: exp(2) ≈ 7.389
+     * Row 3: exp(4) ≈ 54.598
+     */
+    mu_assert("jac->x[0] wrong", fabs(jac->x[0] - 0.5) < 1e-10);
+    mu_assert("jac->x[1] wrong", fabs(jac->x[1] - 0.25) < 1e-10);
+    mu_assert("jac->x[2] wrong", fabs(jac->x[2] - exp(2.0)) < 1e-10);
+    mu_assert("jac->x[3] wrong", fabs(jac->x[3] - exp(4.0)) < 1e-10);
+
+    free_problem(prob);
+
+    return 0;
+}
+
 #endif /* TEST_PROBLEM_H */

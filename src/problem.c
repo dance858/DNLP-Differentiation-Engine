@@ -2,14 +2,60 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Release intermediate refs in expression tree (call free_expr on all children) */
-static void release_child_refs(expr *node)
+/* Simple visited set for tracking freed nodes (handles up to 1024 unique nodes) */
+#define MAX_VISITED 1024
+
+typedef struct
 {
-    if (node == NULL) return;
-    release_child_refs(node->left);
-    release_child_refs(node->right);
-    free_expr(node->left);
-    free_expr(node->right);
+    expr *nodes[MAX_VISITED];
+    int count;
+} VisitedSet;
+
+static void visited_init(VisitedSet *v)
+{
+    v->count = 0;
+}
+
+static int visited_contains(VisitedSet *v, expr *node)
+{
+    for (int i = 0; i < v->count; i++)
+    {
+        if (v->nodes[i] == node) return 1;
+    }
+    return 0;
+}
+
+static void visited_add(VisitedSet *v, expr *node)
+{
+    if (v->count < MAX_VISITED)
+    {
+        v->nodes[v->count++] = node;
+    }
+}
+
+/* Release refs and free nodes, tracking visited to handle sharing */
+static void free_expr_tree_visited(expr *node, VisitedSet *visited)
+{
+    if (node == NULL || visited_contains(visited, node)) return;
+    visited_add(visited, node);
+
+    /* Recursively process children first */
+    free_expr_tree_visited(node->left, visited);
+    free_expr_tree_visited(node->right, visited);
+
+    /* Free this node's resources */
+    free(node->value);
+    free_csr_matrix(node->jacobian);
+    free_csr_matrix(node->wsum_hess);
+    free(node->dwork);
+    free(node->iwork);
+
+    if (node->free_type_data)
+    {
+        node->free_type_data(node);
+    }
+
+    free(node);
 }
 
 problem *new_problem(expr *objective, expr **constraints, int n_constraints)
@@ -93,13 +139,14 @@ void free_problem(problem *prob)
     free(prob->gradient_values);
     free_csr_matrix(prob->stacked_jac);
 
-    /* Free expression trees: release intermediate refs first, then free root */
-    release_child_refs(prob->objective);
-    free_expr(prob->objective);
+    /* Free expression trees with shared visited set to handle node sharing */
+    VisitedSet visited;
+    visited_init(&visited);
+
+    free_expr_tree_visited(prob->objective, &visited);
     for (int i = 0; i < prob->n_constraints; i++)
     {
-        release_child_refs(prob->constraints[i]);
-        free_expr(prob->constraints[i]);
+        free_expr_tree_visited(prob->constraints[i], &visited);
     }
     free(prob->constraints);
 
@@ -128,8 +175,7 @@ double problem_forward(problem *prob, const double *u)
 
 double *problem_gradient(problem *prob, const double *u)
 {
-    /* Forward and jacobian on objective */
-    prob->objective->forward(prob->objective, u);
+    /* Jacobian on objective */
     prob->objective->eval_jacobian(prob->objective);
 
     /* Zero gradient array */
@@ -161,8 +207,7 @@ CSR_Matrix *problem_jacobian(problem *prob, const double *u)
     {
         expr *c = prob->constraints[i];
 
-        /* Forward and eval jacobian */
-        c->forward(c, u);
+        /* Evaluate jacobian */
         c->eval_jacobian(c);
 
         CSR_Matrix *cjac = c->jacobian;
