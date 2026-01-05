@@ -41,6 +41,7 @@ typedef struct problem
 } problem;
 
 problem *new_problem(expr *objective, expr **constraints, int n_constraints);
+void problem_allocate(problem *prob, const double *u);
 void free_problem(problem *prob);
 double problem_forward(problem *prob, const double *u);
 double *problem_gradient(problem *prob, const double *u);
@@ -58,7 +59,38 @@ Key functions:
 ### `new_problem`
 - Retain (increment refcount) on objective and all constraints
 - Compute `total_constraint_size = sum(constraints[i]->size)`
-- Pre-allocate `constraint_values` and `gradient_values` arrays
+- Does NOT allocate storage arrays (use `problem_allocate` separately)
+
+### `problem_allocate`
+Separate function to allocate memory for constraint values and jacobian:
+
+```c
+void problem_allocate(problem *prob, const double *u)
+{
+    /* 1. Allocate constraint values array */
+    prob->constraint_values = malloc(prob->total_constraint_size * sizeof(double));
+
+    /* 2. Allocate jacobian:
+     *    - First, initialize all constraint jacobians
+     *    - Count total nnz across all constraints
+     *    - Allocate CSR matrix with this nnz (may be slight overestimate)
+     */
+    int total_nnz = 0;
+    for (int i = 0; i < prob->n_constraints; i++)
+    {
+        expr *c = prob->constraints[i];
+        c->forward(c, u);
+        c->jacobian_init(c);
+        total_nnz += c->jacobian->nnz;
+    }
+
+    /* Allocate stacked jacobian with total_constraint_size rows */
+    prob->stacked_jac = alloc_csr(prob->total_constraint_size, prob->n_vars, total_nnz);
+
+    /* Note: The actual nnz may be smaller after evaluation due to
+     * cancellations. Update stacked_jac->nnz after problem_jacobian(). */
+}
+```
 
 ### `free_problem`
 - Call `free_expr` on objective and all constraints (decrements refcount)
@@ -201,5 +233,9 @@ class Problem:
 ## Key Design Notes
 
 - **Memory**: Uses expr refcounting - new_problem retains, free_problem releases
-- **Efficiency**: Pre-allocates arrays, lazy-allocates stacked jacobian
+- **Two-phase init**: `new_problem` creates struct, `problem_allocate` allocates arrays
+  - Constraint values array: size = `total_constraint_size`
+  - Jacobian: initialize all constraint jacobians first, count total nnz, allocate CSR
+  - The allocated nnz may be a slight overestimate; update `stacked_jac->nnz` after evaluation
+- **Hessian**: Deferred - not allocated in this design (to be added later)
 - **API**: Returns internal pointers (caller should NOT free)
