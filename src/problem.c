@@ -2,6 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Release intermediate refs in expression tree (call free_expr on all children) */
+static void release_child_refs(expr *node)
+{
+    if (node == NULL) return;
+    release_child_refs(node->left);
+    release_child_refs(node->right);
+    free_expr(node->left);
+    free_expr(node->right);
+}
+
 problem *new_problem(expr *objective, expr **constraints, int n_constraints)
 {
     problem *prob = (problem *) calloc(1, sizeof(problem));
@@ -83,10 +93,12 @@ void free_problem(problem *prob)
     free(prob->gradient_values);
     free_csr_matrix(prob->stacked_jac);
 
-    /* Free expressions (decrements refcount) */
+    /* Free expression trees: release intermediate refs first, then free root */
+    release_child_refs(prob->objective);
     free_expr(prob->objective);
     for (int i = 0; i < prob->n_constraints; i++)
     {
+        release_child_refs(prob->constraints[i]);
         free_expr(prob->constraints[i]);
     }
     free(prob->constraints);
