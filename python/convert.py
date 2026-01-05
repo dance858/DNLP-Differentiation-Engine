@@ -132,6 +132,10 @@ class Problem:
         """Evaluate objective and constraints. Returns (obj_value, constraint_values)."""
         return diffengine.problem_forward(self._capsule, u)
 
+    def constraint_forward(self, u: np.ndarray) -> np.ndarray:
+        """Evaluate constraints only. Returns constraint_values array."""
+        return diffengine.problem_constraint_forward(self._capsule, u)
+
     def gradient(self, u: np.ndarray) -> np.ndarray:
         """Compute gradient of objective. Returns gradient array."""
         return diffengine.problem_gradient(self._capsule, u)

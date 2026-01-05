@@ -67,6 +67,29 @@ def test_problem_jacobian_lowlevel():
     assert np.allclose(jac.toarray(), expected_jac)
 
 
+def test_problem_constraint_forward_lowlevel():
+    """Test problem_constraint_forward for constraint values only (low-level)."""
+    n_vars = 2
+    x = diffengine.make_variable(n_vars, 1, 0, n_vars)
+
+    log_obj = diffengine.make_log(x)
+    objective = diffengine.make_sum(log_obj, -1)
+
+    log_c = diffengine.make_log(x)
+    exp_c = diffengine.make_exp(x)
+    constraints = [log_c, exp_c]
+
+    prob = diffengine.make_problem(objective, constraints)
+    u = np.array([2.0, 4.0])
+    diffengine.problem_allocate(prob, u)
+
+    constraint_vals = diffengine.problem_constraint_forward(prob, u)
+
+    # Expected: [log(2), log(4), exp(2), exp(4)]
+    expected = np.concatenate([np.log(u), np.exp(u)])
+    assert np.allclose(constraint_vals, expected)
+
+
 def test_problem_no_constraints_lowlevel():
     """Test Problem with no constraints (low-level)."""
     n_vars = 3
@@ -320,11 +343,37 @@ def test_problem_repeated_evaluations():
     assert np.allclose(grad2, 1.0 / u2)
 
 
+def test_problem_constraint_forward():
+    """Test Problem.constraint_forward for constraint values only."""
+    x = cp.Variable(2)
+    obj = cp.sum(cp.log(x))
+    constraints = [
+        cp.log(x),
+        cp.exp(x),
+    ]
+
+    cvxpy_prob = cp.Problem(cp.Minimize(obj), constraints)
+    prob = Problem(cvxpy_prob)
+
+    u = np.array([2.0, 4.0])
+    prob.allocate(u)
+
+    # Test constraint_forward
+    constraint_vals = prob.constraint_forward(u)
+    expected = np.concatenate([np.log(u), np.exp(u)])
+    assert np.allclose(constraint_vals, expected)
+
+    # Verify it gives same result as forward's constraint values
+    _, forward_constraint_vals = prob.forward(u)
+    assert np.allclose(constraint_vals, forward_constraint_vals)
+
+
 if __name__ == "__main__":
     # Low-level tests
     test_problem_forward_lowlevel()
     test_problem_gradient_lowlevel()
     test_problem_jacobian_lowlevel()
+    test_problem_constraint_forward_lowlevel()
     test_problem_no_constraints_lowlevel()
     # Problem class tests
     test_problem_single_constraint()
@@ -334,4 +383,5 @@ if __name__ == "__main__":
     test_problem_no_constraints_convert()
     test_problem_larger_scale()
     test_problem_repeated_evaluations()
+    test_problem_constraint_forward()
     print("All problem tests passed!")

@@ -125,6 +125,7 @@ int main(void)
     mu_run_test(test_problem_gradient, tests_run);
     mu_run_test(test_problem_jacobian, tests_run);
     mu_run_test(test_problem_jacobian_multi, tests_run);
+    mu_run_test(test_problem_constraint_forward, tests_run);
 
     printf("\n=== All %d tests passed ===\n", tests_run);
 

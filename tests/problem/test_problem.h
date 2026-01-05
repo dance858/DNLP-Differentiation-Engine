@@ -37,8 +37,12 @@ const char *test_problem_new_free(void)
     mu_assert("n_constraints wrong", prob->n_constraints == 1);
     mu_assert("total_constraint_size wrong", prob->total_constraint_size == 3);
 
-    /* Free problem (owns and frees all expressions) */
+    /* Free problem and expressions (shared ownership) */
     free_problem(prob);
+    free_expr(objective);
+    free_expr(log_x);
+    free_expr(x);
+    free_expr(x_constraint);
 
     return 0;
 }
@@ -73,6 +77,10 @@ const char *test_problem_forward(void)
     mu_assert("constraint[2] wrong", fabs(prob->constraint_values[2] - 3.0) < 1e-10);
 
     free_problem(prob);
+    free_expr(objective);
+    free_expr(log_x);
+    free_expr(x);
+    free_expr(x_constraint);
 
     return 0;
 }
@@ -99,6 +107,9 @@ const char *test_problem_gradient(void)
     mu_assert("grad[2] wrong", fabs(grad[2] - 0.25) < 1e-10);
 
     free_problem(prob);
+    free_expr(objective);
+    free_expr(log_x);
+    free_expr(x);
 
     return 0;
 }
@@ -146,6 +157,11 @@ const char *test_problem_jacobian(void)
     mu_assert("jac->x[1] wrong", fabs(jac->x[1] - 0.25) < 1e-10);
 
     free_problem(prob);
+    free_expr(objective);
+    free_expr(log_obj);
+    free_expr(x_obj);
+    free_expr(log_c1);
+    free_expr(x_c1);
 
     return 0;
 }
@@ -221,6 +237,60 @@ const char *test_problem_jacobian_multi(void)
     mu_assert("jac->x[3] wrong", fabs(jac->x[3] - exp(4.0)) < 1e-10);
 
     free_problem(prob);
+    free_expr(objective);
+    free_expr(log_obj);
+    free_expr(log_c1);
+    free_expr(exp_c2);
+    free_expr(x);
+
+    return 0;
+}
+
+/*
+ * Test problem_constraint_forward: evaluate constraints only
+ *   Constraint 1: log(x) -> [log(2), log(4)]
+ *   Constraint 2: exp(x) -> [exp(2), exp(4)]
+ */
+const char *test_problem_constraint_forward(void)
+{
+    int n_vars = 2;
+
+    /* Shared variable */
+    expr *x = new_variable(2, 1, 0, n_vars);
+
+    /* Objective: sum(log(x)) */
+    expr *log_obj = new_log(x);
+    expr *objective = new_sum(log_obj, -1);
+
+    /* Constraint 1: log(x) */
+    expr *log_c1 = new_log(x);
+
+    /* Constraint 2: exp(x) */
+    expr *exp_c2 = new_exp(x);
+
+    expr *constraints[2] = {log_c1, exp_c2};
+
+    problem *prob = new_problem(objective, constraints, 2);
+
+    double u[2] = {2.0, 4.0};
+    problem_allocate(prob, u);
+
+    double *constraint_vals = problem_constraint_forward(prob, u);
+
+    /* Check constraint values:
+     * [log(2), log(4), exp(2), exp(4)]
+     */
+    mu_assert("constraint[0] wrong", fabs(constraint_vals[0] - log(2.0)) < 1e-10);
+    mu_assert("constraint[1] wrong", fabs(constraint_vals[1] - log(4.0)) < 1e-10);
+    mu_assert("constraint[2] wrong", fabs(constraint_vals[2] - exp(2.0)) < 1e-10);
+    mu_assert("constraint[3] wrong", fabs(constraint_vals[3] - exp(4.0)) < 1e-10);
+
+    free_problem(prob);
+    free_expr(objective);
+    free_expr(log_obj);
+    free_expr(log_c1);
+    free_expr(exp_c2);
+    free_expr(x);
 
     return 0;
 }

@@ -63,10 +63,11 @@ problem *new_problem(expr *objective, expr **constraints, int n_constraints)
     problem *prob = (problem *) calloc(1, sizeof(problem));
     if (!prob) return NULL;
 
-    /* Take ownership of objective (no retain - caller transfers ownership) */
+    /* Retain objective (shared ownership with caller) */
     prob->objective = objective;
+    expr_retain(objective);
 
-    /* Copy constraints array (take ownership, no retain) */
+    /* Copy and retain constraints array */
     prob->n_constraints = n_constraints;
     if (n_constraints > 0)
     {
@@ -74,6 +75,7 @@ problem *new_problem(expr *objective, expr **constraints, int n_constraints)
         for (int i = 0; i < n_constraints; i++)
         {
             prob->constraints[i] = constraints[i];
+            expr_retain(constraints[i]);
         }
     }
     else
@@ -139,14 +141,11 @@ void free_problem(problem *prob)
     free(prob->gradient_values);
     free_csr_matrix(prob->stacked_jac);
 
-    /* Free expression trees with shared visited set to handle node sharing */
-    VisitedSet visited;
-    visited_init(&visited);
-
-    free_expr_tree_visited(prob->objective, &visited);
+    /* Release expression references (decrements refcount) */
+    free_expr(prob->objective);
     for (int i = 0; i < prob->n_constraints; i++)
     {
-        free_expr_tree_visited(prob->constraints[i], &visited);
+        free_expr(prob->constraints[i]);
     }
     free(prob->constraints);
 
@@ -171,6 +170,21 @@ double problem_forward(problem *prob, const double *u)
     }
 
     return obj_val;
+}
+
+double *problem_constraint_forward(problem *prob, const double *u)
+{
+    /* Evaluate constraints only and copy values */
+    int offset = 0;
+    for (int i = 0; i < prob->n_constraints; i++)
+    {
+        expr *c = prob->constraints[i];
+        c->forward(c, u);
+        memcpy(prob->constraint_values + offset, c->value, c->size * sizeof(double));
+        offset += c->size;
+    }
+
+    return prob->constraint_values;
 }
 
 double *problem_gradient(problem *prob, const double *u)

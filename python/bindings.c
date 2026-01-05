@@ -388,6 +388,56 @@ static PyObject *py_problem_forward(PyObject *self, PyObject *args)
     return Py_BuildValue("(dO)", obj_val, constraint_vals);
 }
 
+static PyObject *py_problem_constraint_forward(PyObject *self, PyObject *args)
+{
+    PyObject *prob_capsule;
+    PyObject *u_obj;
+    if (!PyArg_ParseTuple(args, "OO", &prob_capsule, &u_obj))
+    {
+        return NULL;
+    }
+
+    problem *prob =
+        (problem *) PyCapsule_GetPointer(prob_capsule, PROBLEM_CAPSULE_NAME);
+    if (!prob)
+    {
+        PyErr_SetString(PyExc_ValueError, "invalid problem capsule");
+        return NULL;
+    }
+
+    PyArrayObject *u_array =
+        (PyArrayObject *) PyArray_FROM_OTF(u_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (!u_array)
+    {
+        return NULL;
+    }
+
+    double *constraint_vals =
+        problem_constraint_forward(prob, (const double *) PyArray_DATA(u_array));
+
+    PyObject *out = NULL;
+    if (prob->total_constraint_size > 0)
+    {
+        npy_intp size = prob->total_constraint_size;
+        out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
+        if (!out)
+        {
+            Py_DECREF(u_array);
+            return NULL;
+        }
+        memcpy(PyArray_DATA((PyArrayObject *) out), constraint_vals,
+               size * sizeof(double));
+    }
+    else
+    {
+        npy_intp size = 0;
+        out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
+    }
+
+    Py_DECREF(u_array);
+    return out;
+}
+
 static PyObject *py_problem_gradient(PyObject *self, PyObject *args)
 {
     PyObject *prob_capsule;
@@ -500,6 +550,7 @@ static PyMethodDef DNLPMethods[] = {
     {"make_problem", py_make_problem, METH_VARARGS, "Create problem from objective and constraints"},
     {"problem_allocate", py_problem_allocate, METH_VARARGS, "Allocate problem resources"},
     {"problem_forward", py_problem_forward, METH_VARARGS, "Evaluate objective and constraints"},
+    {"problem_constraint_forward", py_problem_constraint_forward, METH_VARARGS, "Evaluate constraints only"},
     {"problem_gradient", py_problem_gradient, METH_VARARGS, "Compute objective gradient"},
     {"problem_jacobian", py_problem_jacobian, METH_VARARGS, "Compute constraint jacobian"},
     {NULL, NULL, 0, NULL}};
