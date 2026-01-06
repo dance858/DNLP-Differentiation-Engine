@@ -36,7 +36,6 @@ const char *test_quad_form()
     mu_assert("rows fail", cmp_int_array(node->jacobian->p, expected_Ap, 2));
     mu_assert("cols fail", cmp_int_array(node->jacobian->i, expected_Ai, 3));
     free_expr(node);
-    free_expr(x);
     free_csr_matrix(Q);
     return 0;
 }
@@ -84,7 +83,6 @@ mu_assert("rows fail", cmp_int_array(node->jacobian->p, expected_Ap, 2));
 mu_assert("cols fail", cmp_int_array(node->jacobian->i, expected_Ai, 5));
 free_expr(node);
 free_expr(Au);
-free_expr(u);
 free_csr_matrix(Q);
 free_csr_matrix(A);
 return 0;

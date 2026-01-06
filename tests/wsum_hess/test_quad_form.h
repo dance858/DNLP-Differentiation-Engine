@@ -42,7 +42,6 @@ const char *test_wsum_hess_quad_form()
     mu_assert("x array fails", cmp_double_array(node->wsum_hess->x, expected_x, 10));
 
     free_expr(node);
-    free_expr(x);
     free_csr_matrix(Q);
     return 0;
 }
