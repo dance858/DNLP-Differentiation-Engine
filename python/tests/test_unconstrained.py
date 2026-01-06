@@ -19,7 +19,7 @@ def test_sum_log():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0, 3.0, 4.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -27,7 +27,7 @@ def test_sum_log():
     assert np.allclose(obj_val, expected)
 
     # Gradient: d/dx sum(log(x)) = 1/x
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
@@ -39,7 +39,7 @@ def test_sum_exp():
     prob = C_problem(problem)
 
     u = np.array([0.0, 1.0, 2.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -47,7 +47,7 @@ def test_sum_exp():
     assert np.allclose(obj_val, expected)
 
     # Gradient: d/dx sum(exp(x)) = exp(x)
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = np.exp(u)
     assert np.allclose(grad, expected_grad)
 
@@ -59,7 +59,7 @@ def test_variable_reuse():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -67,7 +67,7 @@ def test_variable_reuse():
     assert np.allclose(obj_val, expected)
 
     # Gradient: d/dx_i = 1/x_i + exp(x_i)
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 1.0 / u + np.exp(u)
     assert np.allclose(grad, expected_grad)
 
@@ -79,7 +79,7 @@ def test_variable_used_multiple_times():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0, 3.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -87,7 +87,7 @@ def test_variable_used_multiple_times():
     assert np.allclose(obj_val, expected)
 
     # Gradient: d/dx_i = 2/x_i + exp(x_i)
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 2.0 / u + np.exp(u)
     assert np.allclose(grad, expected_grad)
 
@@ -99,7 +99,7 @@ def test_larger_variable():
     prob = C_problem(problem)
 
     u = np.linspace(1.0, 10.0, 100)
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -107,7 +107,7 @@ def test_larger_variable():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
@@ -119,7 +119,7 @@ def test_matrix_variable():
     prob = C_problem(problem)
 
     u = np.arange(1.0, 13.0)  # 12 elements
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -127,7 +127,7 @@ def test_matrix_variable():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
@@ -142,7 +142,7 @@ def test_two_variables_separate_ops():
     x_vals = np.array([1.0, 2.0])
     y_vals = np.array([0.5, 1.0])
     u = np.concatenate([x_vals, y_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -150,7 +150,7 @@ def test_two_variables_separate_ops():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = np.concatenate([1.0 / x_vals, np.exp(y_vals)])
     assert np.allclose(grad, expected_grad)
 
@@ -165,7 +165,7 @@ def test_two_variables_same_sum():
     x_vals = np.array([1.0, 2.0])
     y_vals = np.array([3.0, 4.0])
     u = np.concatenate([x_vals, y_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -173,7 +173,7 @@ def test_two_variables_same_sum():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = np.concatenate([1.0 / x_vals, 1.0 / y_vals])
     assert np.allclose(grad, expected_grad)
 
@@ -192,7 +192,7 @@ def test_mixed_sizes():
     b_vals = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     c_vals = np.array([1.0, 2.0, 3.0])
     u = np.concatenate([a_vals, b_vals, c_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -200,7 +200,7 @@ def test_mixed_sizes():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
@@ -220,7 +220,7 @@ def test_multiple_variables_log_exp():
     c_vals = np.array([0.1, 0.2])
     d_vals = np.array([0.1, 0.1])
     u = np.concatenate([a_vals, b_vals, c_vals, d_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -229,7 +229,7 @@ def test_multiple_variables_log_exp():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = np.concatenate([
         1.0 / a_vals,
         1.0 / b_vals,
@@ -252,7 +252,7 @@ def test_three_variables_mixed():
     y_vals = np.array([0.5, 1.0])
     z_vals = np.array([2.0, 3.0])
     u = np.concatenate([x_vals, y_vals, z_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Objective
     obj_val = prob.objective_forward(u)
@@ -260,7 +260,7 @@ def test_three_variables_mixed():
     assert np.allclose(obj_val, expected)
 
     # Gradient
-    grad = prob.gradient(u)
+    grad = prob.gradient()
     expected_grad = np.concatenate([1.0 / x_vals, np.exp(y_vals), 1.0 / z_vals])
     assert np.allclose(grad, expected_grad)
 
@@ -272,16 +272,16 @@ def test_repeated_evaluations():
     prob = C_problem(problem)
 
     u1 = np.array([1.0, 2.0, 3.0])
-    prob.allocate(u1)
+    prob.init_derivatives()
 
     # First evaluation
     obj1 = prob.objective_forward(u1)
-    grad1 = prob.gradient(u1)
+    grad1 = prob.gradient()
 
     # Second evaluation
     u2 = np.array([2.0, 3.0, 4.0])
     obj2 = prob.objective_forward(u2)
-    grad2 = prob.gradient(u2)
+    grad2 = prob.gradient()
 
     assert np.allclose(obj1, np.sum(np.log(u1)))
     assert np.allclose(obj2, np.sum(np.log(u2)))
@@ -320,7 +320,7 @@ def test_repeated_evaluations():
 #     x_vals = np.array([1.0, 2.0])
 #     y_vals = np.array([0.5, 1.0])
 #     u = np.concatenate([x_vals, y_vals])
-#     prob.allocate(u)
+#     prob.init_derivatives()
 #
 #     # Expected objective: sum(log(x + y))
 #     obj_val = prob.objective_forward(u)
@@ -328,7 +328,7 @@ def test_repeated_evaluations():
 #     assert np.allclose(obj_val, expected)
 #
 #     # Expected gradient: d/dx_i = 1/(x_i + y_i), d/dy_i = 1/(x_i + y_i)
-#     grad = prob.gradient(u)
+#     grad = prob.gradient()
 #     grad_xy = 1.0 / (x_vals + y_vals)
 #     expected_grad = np.concatenate([grad_xy, grad_xy])
 #     assert np.allclose(grad, expected_grad)
@@ -345,7 +345,7 @@ def test_repeated_evaluations():
 #     prob = C_problem(problem)
 #
 #     u = np.array([1.0, 2.0, 3.0, 4.0])
-#     prob.allocate(u)
+#     prob.init_derivatives()
 #
 #     # Expected objective: log(sum(x))
 #     obj_val = prob.objective_forward(u)
@@ -353,7 +353,7 @@ def test_repeated_evaluations():
 #     assert np.allclose(obj_val, expected)
 #
 #     # Expected gradient: d/dx_i log(sum(x)) = 1/sum(x)
-#     grad = prob.gradient(u)
+#     grad = prob.gradient()
 #     expected_grad = np.ones_like(u) / np.sum(u)
 #     assert np.allclose(grad, expected_grad)
 
@@ -374,7 +374,7 @@ def test_repeated_evaluations():
 #     y_vals = np.array([0.5, 1.0])
 #     z_vals = np.array([0.1, 0.2])
 #     u = np.concatenate([x_vals, y_vals, z_vals])
-#     prob.allocate(u)
+#     prob.init_derivatives()
 #
 #     # Expected objective
 #     obj_val = prob.objective_forward(u)
@@ -397,7 +397,7 @@ def test_repeated_evaluations():
 #     y_vals = np.array([0.5, 1.0])
 #     z_vals = np.array([0.5, 0.5])
 #     u = np.concatenate([x_vals, y_vals, z_vals])
-#     prob.allocate(u)
+#     prob.init_derivatives()
 #
 #     # Expected objective
 #     obj_val = prob.objective_forward(u)

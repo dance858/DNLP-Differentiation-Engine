@@ -117,15 +117,15 @@ const char *test_problem_constraint_forward(void)
     double u[2] = {2.0, 4.0};
     problem_init_derivatives(prob);
 
-    double *constraint_vals = problem_constraint_forward(prob, u);
+    problem_constraint_forward(prob, u);
 
     /* Check constraint values:
      * [log(2), log(4), exp(2), exp(4)]
      */
-    mu_assert("constraint[0] wrong", fabs(constraint_vals[0] - log(2.0)) < 1e-10);
-    mu_assert("constraint[1] wrong", fabs(constraint_vals[1] - log(4.0)) < 1e-10);
-    mu_assert("constraint[2] wrong", fabs(constraint_vals[2] - exp(2.0)) < 1e-10);
-    mu_assert("constraint[3] wrong", fabs(constraint_vals[3] - exp(4.0)) < 1e-10);
+    mu_assert("constraint[0] wrong", fabs(prob->constraint_values[0] - log(2.0)) < 1e-10);
+    mu_assert("constraint[1] wrong", fabs(prob->constraint_values[1] - log(4.0)) < 1e-10);
+    mu_assert("constraint[2] wrong", fabs(prob->constraint_values[2] - exp(2.0)) < 1e-10);
+    mu_assert("constraint[3] wrong", fabs(prob->constraint_values[3] - exp(4.0)) < 1e-10);
 
     free_problem(prob);
     free_expr(objective);
@@ -152,12 +152,12 @@ const char *test_problem_gradient(void)
     problem_init_derivatives(prob);
 
     problem_objective_forward(prob, u);
-    double *grad = problem_gradient(prob, u);
+    problem_gradient(prob);
 
     /* Expected gradient: [1/1, 1/2, 1/4] = [1.0, 0.5, 0.25] */
-    mu_assert("grad[0] wrong", fabs(grad[0] - 1.0) < 1e-10);
-    mu_assert("grad[1] wrong", fabs(grad[1] - 0.5) < 1e-10);
-    mu_assert("grad[2] wrong", fabs(grad[2] - 0.25) < 1e-10);
+    mu_assert("grad[0] wrong", fabs(prob->gradient_values[0] - 1.0) < 1e-10);
+    mu_assert("grad[1] wrong", fabs(prob->gradient_values[1] - 0.5) < 1e-10);
+    mu_assert("grad[2] wrong", fabs(prob->gradient_values[2] - 0.25) < 1e-10);
 
     free_problem(prob);
     free_expr(objective);
@@ -191,7 +191,9 @@ const char *test_problem_jacobian(void)
     problem_init_derivatives(prob);
 
     problem_constraint_forward(prob, u);
-    CSR_Matrix *jac = problem_jacobian(prob, u);
+    problem_jacobian(prob);
+
+    CSR_Matrix *jac = prob->stacked_jac;
 
     /* Check dimensions */
     mu_assert("jac rows wrong", jac->m == 2);
@@ -259,7 +261,9 @@ const char *test_problem_jacobian_multi(void)
     problem_init_derivatives(prob);
 
     problem_constraint_forward(prob, u);
-    CSR_Matrix *jac = problem_jacobian(prob, u);
+    problem_jacobian(prob);
+
+    CSR_Matrix *jac = prob->stacked_jac;
 
     /* Check dimensions: 4 rows (2 + 2), 2 cols */
     mu_assert("jac rows wrong", jac->m == 4);

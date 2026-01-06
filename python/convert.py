@@ -151,11 +151,11 @@ class C_problem:
         """Evaluate constraints only. Returns constraint_values array."""
         return diffengine.problem_constraint_forward(self._capsule, u)
 
-    def gradient(self, u: np.ndarray) -> np.ndarray:
-        """Compute gradient of objective. Returns gradient array."""
-        return diffengine.problem_gradient(self._capsule, u)
+    def gradient(self) -> np.ndarray:
+        """Compute gradient of objective. Call objective_forward first. Returns gradient array."""
+        return diffengine.problem_gradient(self._capsule)
 
-    def jacobian(self, u: np.ndarray) -> sparse.csr_matrix:
-        """Compute jacobian of constraints. Returns scipy CSR matrix."""
-        data, indices, indptr, shape = diffengine.problem_jacobian(self._capsule, u)
+    def jacobian(self) -> sparse.csr_matrix:
+        """Compute jacobian of constraints. Call constraint_forward first. Returns scipy CSR matrix."""
+        data, indices, indptr, shape = diffengine.problem_jacobian(self._capsule)
         return sparse.csr_matrix((data, indices, indptr), shape=shape)

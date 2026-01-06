@@ -12,9 +12,11 @@ typedef struct problem
     int n_vars;
     int total_constraint_size;
 
-    /* Allocated by problem_init_derivatives */
+    /* Allocated by new_problem */
     double *constraint_values;
     double *gradient_values;
+
+    /* Allocated by problem_init_derivatives */
     CSR_Matrix *stacked_jac;
 } problem;
 
@@ -24,8 +26,8 @@ void problem_init_derivatives(problem *prob);
 void free_problem(problem *prob);
 
 double problem_objective_forward(problem *prob, const double *u);
-double *problem_constraint_forward(problem *prob, const double *u);
-double *problem_gradient(problem *prob, const double *u);
-CSR_Matrix *problem_jacobian(problem *prob, const double *u);
+void problem_constraint_forward(problem *prob, const double *u);
+void problem_gradient(problem *prob);
+void problem_jacobian(problem *prob);
 
 #endif

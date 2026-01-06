@@ -6,8 +6,7 @@
 static PyObject *py_problem_jacobian(PyObject *self, PyObject *args)
 {
     PyObject *prob_capsule;
-    PyObject *u_obj;
-    if (!PyArg_ParseTuple(args, "OO", &prob_capsule, &u_obj))
+    if (!PyArg_ParseTuple(args, "O", &prob_capsule))
     {
         return NULL;
     }
@@ -32,15 +31,9 @@ static PyObject *py_problem_jacobian(PyObject *self, PyObject *args)
         return Py_BuildValue("(OOO(ii))", data, indices, indptr, 0, prob->n_vars);
     }
 
-    PyArrayObject *u_array =
-        (PyArrayObject *) PyArray_FROM_OTF(u_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (!u_array)
-    {
-        return NULL;
-    }
+    problem_jacobian(prob);
 
-    CSR_Matrix *jac = problem_jacobian(prob, (const double *) PyArray_DATA(u_array));
-
+    CSR_Matrix *jac = prob->stacked_jac;
     npy_intp nnz = jac->nnz;
     npy_intp m_plus_1 = jac->m + 1;
 
@@ -53,7 +46,6 @@ static PyObject *py_problem_jacobian(PyObject *self, PyObject *args)
         Py_XDECREF(data);
         Py_XDECREF(indices);
         Py_XDECREF(indptr);
-        Py_DECREF(u_array);
         return NULL;
     }
 
@@ -61,7 +53,6 @@ static PyObject *py_problem_jacobian(PyObject *self, PyObject *args)
     memcpy(PyArray_DATA((PyArrayObject *) indices), jac->i, nnz * sizeof(int));
     memcpy(PyArray_DATA((PyArrayObject *) indptr), jac->p, m_plus_1 * sizeof(int));
 
-    Py_DECREF(u_array);
     return Py_BuildValue("(OOO(ii))", data, indices, indptr, jac->m, jac->n);
 }
 

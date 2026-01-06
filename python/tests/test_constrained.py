@@ -17,14 +17,14 @@ def test_single_constraint():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0, 3.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Test constraint_forward: constr.expr = -log(x)
     constraint_vals = prob.constraint_forward(u)
     assert np.allclose(constraint_vals, -np.log(u))
 
     # Test jacobian: d/dx(-log(x)) = -1/x
-    jac = prob.jacobian(u)
+    jac = prob.jacobian()
     expected_jac = np.diag(-1.0 / u)
     assert np.allclose(jac.toarray(), expected_jac)
 
@@ -42,7 +42,7 @@ def test_two_constraints():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Test constraint_forward: [-log(u), -exp(u)]
     expected_constraint_vals = np.concatenate([-np.log(u), -np.exp(u)])
@@ -50,7 +50,7 @@ def test_two_constraints():
     assert np.allclose(constraint_vals, expected_constraint_vals)
 
     # Test jacobian - stacked vertically
-    jac = prob.jacobian(u)
+    jac = prob.jacobian()
     assert jac.shape == (4, 2)
     expected_jac = np.vstack([np.diag(-1.0 / u), np.diag(-np.exp(u))])
     assert np.allclose(jac.toarray(), expected_jac)
@@ -70,7 +70,7 @@ def test_three_constraints_different_sizes():
     prob = C_problem(problem)
 
     u = np.array([1.0, 2.0, 3.0])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Test constraint_forward
     expected_constraint_vals = np.concatenate([
@@ -82,7 +82,7 @@ def test_three_constraints_different_sizes():
     assert np.allclose(constraint_vals, expected_constraint_vals)
 
     # Test jacobian shape and values
-    jac = prob.jacobian(u)
+    jac = prob.jacobian()
     assert jac.shape == (7, 3)
     # First 3 rows: -diag(1/u), next 3 rows: -diag(exp(u)), last row: -1/u
     expected_jac = np.zeros((7, 3))
@@ -108,7 +108,7 @@ def test_multiple_variables():
     x_vals = np.array([1.0, 2.0])
     y_vals = np.array([0.5, 1.0])
     u = np.concatenate([x_vals, y_vals])
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Test constraint_forward
     expected_constraint_vals = np.concatenate([-np.log(x_vals), -np.exp(y_vals)])
@@ -116,7 +116,7 @@ def test_multiple_variables():
     assert np.allclose(constraint_vals, expected_constraint_vals)
 
     # Test jacobian
-    jac = prob.jacobian(u)
+    jac = prob.jacobian()
     assert jac.shape == (4, 4)
     expected_jac = np.zeros((4, 4))
     expected_jac[0, 0] = -1.0 / x_vals[0]
@@ -142,7 +142,7 @@ def test_larger_scale():
     prob = C_problem(problem)
 
     u = np.linspace(1.0, 5.0, n)
-    prob.allocate(u)
+    prob.init_derivatives()
 
     # Test constraint_forward
     expected_constraint_vals = np.concatenate([
@@ -155,7 +155,7 @@ def test_larger_scale():
     assert np.allclose(constraint_vals, expected_constraint_vals)
 
     # Test jacobian shape
-    jac = prob.jacobian(u)
+    jac = prob.jacobian()
     assert jac.shape == (n + n + 1 + 1, n)
 
 
@@ -169,16 +169,16 @@ def test_repeated_evaluations():
     prob = C_problem(problem)
 
     u1 = np.array([1.0, 2.0, 3.0])
-    prob.allocate(u1)
+    prob.init_derivatives()
 
     # First evaluation
     constraint_vals1 = prob.constraint_forward(u1)
-    jac1 = prob.jacobian(u1)
+    jac1 = prob.jacobian()
 
     # Second evaluation at different point
     u2 = np.array([2.0, 3.0, 4.0])
     constraint_vals2 = prob.constraint_forward(u2)
-    jac2 = prob.jacobian(u2)
+    jac2 = prob.jacobian()
 
     assert np.allclose(constraint_vals1, -np.exp(u1))
     assert np.allclose(constraint_vals2, -np.exp(u2))

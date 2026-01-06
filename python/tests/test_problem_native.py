@@ -58,7 +58,7 @@ def test_problem_gradient():
     diffengine.problem_init_derivatives(prob)
 
     diffengine.problem_objective_forward(prob, u)
-    grad = diffengine.problem_gradient(prob, u)
+    grad = diffengine.problem_gradient(prob)
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
@@ -76,7 +76,7 @@ def test_problem_jacobian():
     diffengine.problem_init_derivatives(prob)
 
     diffengine.problem_constraint_forward(prob, u)
-    data, indices, indptr, shape = diffengine.problem_jacobian(prob, u)
+    data, indices, indptr, shape = diffengine.problem_jacobian(prob)
     jac = sparse.csr_matrix((data, indices, indptr), shape=shape)
 
     expected_jac = np.diag(1.0 / u)
@@ -100,11 +100,11 @@ def test_problem_no_constraints():
     assert len(constraint_vals) == 0
 
     diffengine.problem_objective_forward(prob, u)
-    grad = diffengine.problem_gradient(prob, u)
+    grad = diffengine.problem_gradient(prob)
     assert np.allclose(grad, 1.0 / u)
 
     diffengine.problem_constraint_forward(prob, u)
-    data, indices, indptr, shape = diffengine.problem_jacobian(prob, u)
+    data, indices, indptr, shape = diffengine.problem_jacobian(prob)
     jac = sparse.csr_matrix((data, indices, indptr), shape=shape)
     assert jac.shape == (0, 3)
 
@@ -138,13 +138,13 @@ def test_problem_multiple_constraints():
 
     # Test gradient
     diffengine.problem_objective_forward(prob, u)
-    grad = diffengine.problem_gradient(prob, u)
+    grad = diffengine.problem_gradient(prob)
     expected_grad = 1.0 / u
     assert np.allclose(grad, expected_grad)
 
     # Test Jacobian
     diffengine.problem_constraint_forward(prob, u)
-    data, indices, indptr, shape = diffengine.problem_jacobian(prob, u)
+    data, indices, indptr, shape = diffengine.problem_jacobian(prob)
     jac = sparse.csr_matrix((data, indices, indptr), shape=shape)
     
     # Expected Jacobian: 

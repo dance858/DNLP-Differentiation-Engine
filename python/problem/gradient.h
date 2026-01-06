@@ -6,8 +6,7 @@
 static PyObject *py_problem_gradient(PyObject *self, PyObject *args)
 {
     PyObject *prob_capsule;
-    PyObject *u_obj;
-    if (!PyArg_ParseTuple(args, "OO", &prob_capsule, &u_obj))
+    if (!PyArg_ParseTuple(args, "O", &prob_capsule))
     {
         return NULL;
     }
@@ -20,25 +19,16 @@ static PyObject *py_problem_gradient(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    PyArrayObject *u_array =
-        (PyArrayObject *) PyArray_FROM_OTF(u_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (!u_array)
-    {
-        return NULL;
-    }
-
-    double *grad = problem_gradient(prob, (const double *) PyArray_DATA(u_array));
+    problem_gradient(prob);
 
     npy_intp size = prob->n_vars;
     PyObject *out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
     if (!out)
     {
-        Py_DECREF(u_array);
         return NULL;
     }
-    memcpy(PyArray_DATA((PyArrayObject *) out), grad, size * sizeof(double));
+    memcpy(PyArray_DATA((PyArrayObject *) out), prob->gradient_values, size * sizeof(double));
 
-    Py_DECREF(u_array);
     return out;
 }
 

@@ -27,8 +27,8 @@ static PyObject *py_problem_constraint_forward(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    double *constraint_vals =
-        problem_constraint_forward(prob, (const double *) PyArray_DATA(u_array));
+    problem_constraint_forward(prob, (const double *) PyArray_DATA(u_array));
+    Py_DECREF(u_array);
 
     PyObject *out = NULL;
     if (prob->total_constraint_size > 0)
@@ -37,10 +37,9 @@ static PyObject *py_problem_constraint_forward(PyObject *self, PyObject *args)
         out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
         if (!out)
         {
-            Py_DECREF(u_array);
             return NULL;
         }
-        memcpy(PyArray_DATA((PyArrayObject *) out), constraint_vals,
+        memcpy(PyArray_DATA((PyArrayObject *) out), prob->constraint_values,
                size * sizeof(double));
     }
     else
@@ -49,7 +48,6 @@ static PyObject *py_problem_constraint_forward(PyObject *self, PyObject *args)
         out = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
     }
 
-    Py_DECREF(u_array);
     return out;
 }
 
