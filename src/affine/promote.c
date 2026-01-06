@@ -37,6 +37,21 @@ static void jacobian_init(expr *node)
     if (nnz_max == 0) nnz_max = 1;
 
     node->jacobian = new_csr_matrix(node->size, node->n_vars, nnz_max);
+    CSR_Matrix *jac = node->jacobian;
+
+    /* Build sparsity pattern by replicating child's rows */
+    jac->nnz = 0;
+    for (int row = 0; row < node->size; row++)
+    {
+        jac->p[row] = jac->nnz;
+        int child_row = row % child_size;
+        for (int k = child_jac->p[child_row]; k < child_jac->p[child_row + 1]; k++)
+        {
+            jac->i[jac->nnz] = child_jac->i[k];
+            jac->nnz++;
+        }
+    }
+    jac->p[node->size] = jac->nnz;
 }
 
 static void eval_jacobian(expr *node)
@@ -48,24 +63,16 @@ static void eval_jacobian(expr *node)
     CSR_Matrix *jac = node->jacobian;
     int child_size = node->left->size;
 
-    /* Build jacobian by replicating child's rows */
-    jac->nnz = 0;
+    /* Copy values only (sparsity pattern set in jacobian_init) */
+    int idx = 0;
     for (int row = 0; row < node->size; row++)
     {
-        jac->p[row] = jac->nnz;
-
-        /* which child row does this output row correspond to? */
         int child_row = row % child_size;
-
-        /* copy entries from child_jac row */
         for (int k = child_jac->p[child_row]; k < child_jac->p[child_row + 1]; k++)
         {
-            jac->i[jac->nnz] = child_jac->i[k];
-            jac->x[jac->nnz] = child_jac->x[k];
-            jac->nnz++;
+            jac->x[idx++] = child_jac->x[k];
         }
     }
-    jac->p[node->size] = jac->nnz;
 }
 
 static void wsum_hess_init(expr *node)
@@ -76,6 +83,17 @@ static void wsum_hess_init(expr *node)
     /* same sparsity as child since we're summing weights */
     CSR_Matrix *child_hess = node->left->wsum_hess;
     node->wsum_hess = new_csr_matrix(child_hess->m, child_hess->n, child_hess->nnz);
+
+    /* copy row pointers and column indices (sparsity pattern is constant) */
+    for (int i = 0; i <= child_hess->m; i++)
+    {
+        node->wsum_hess->p[i] = child_hess->p[i];
+    }
+    for (int k = 0; k < child_hess->nnz; k++)
+    {
+        node->wsum_hess->i[k] = child_hess->i[k];
+    }
+    node->wsum_hess->nnz = child_hess->nnz;
 }
 
 static void eval_wsum_hess(expr *node, const double *w)
@@ -83,7 +101,6 @@ static void eval_wsum_hess(expr *node, const double *w)
     /* Sum weights that correspond to the same child element */
     int child_size = node->left->size;
     double *summed_w = (double *) calloc(child_size, sizeof(double));
-
     for (int i = 0; i < node->size; i++)
     {
         summed_w[i % child_size] += w[i];
@@ -93,22 +110,12 @@ static void eval_wsum_hess(expr *node, const double *w)
     node->left->eval_wsum_hess(node->left, summed_w);
     free(summed_w);
 
-    /* copy child's wsum_hess */
+    /* copy values only (sparsity pattern set in wsum_hess_init) */
     CSR_Matrix *child_hess = node->left->wsum_hess;
-    CSR_Matrix *hess = node->wsum_hess;
-
-    for (int i = 0; i <= child_hess->m; i++)
+    for (int k = 0; k < child_hess->nnz; k++)
     {
-        hess->p[i] = child_hess->p[i];
+        node->wsum_hess->x[k] = child_hess->x[k];
     }
-
-    int nnz = child_hess->p[child_hess->m];
-    for (int k = 0; k < nnz; k++)
-    {
-        hess->i[k] = child_hess->i[k];
-        hess->x[k] = child_hess->x[k];
-    }
-    hess->nnz = nnz;
 }
 
 static bool is_affine(const expr *node)

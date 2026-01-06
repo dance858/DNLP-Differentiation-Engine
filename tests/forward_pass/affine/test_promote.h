@@ -20,7 +20,6 @@ const char *test_promote_scalar_to_vector(void)
               cmp_double_array(promote_node->value, expected, 4));
 
     free_expr(promote_node);
-    free_expr(var);
     return 0;
 }
 
@@ -47,7 +46,6 @@ const char *test_promote_scalar_jacobian(void)
               cmp_int_array(promote_node->jacobian->i, expected_i, 3));
 
     free_expr(promote_node);
-    free_expr(var);
     return 0;
 }
 
@@ -85,6 +83,5 @@ const char *test_promote_vector_jacobian(void)
               cmp_int_array(promote_node->jacobian->i, expected_i, 4));
 
     free_expr(promote_node);
-    free_expr(var);
     return 0;
 }

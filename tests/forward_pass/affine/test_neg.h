@@ -16,7 +16,6 @@ const char *test_neg_forward(void)
     double expected[3] = {-1.0, -2.0, -3.0};
     mu_assert("neg forward failed", cmp_double_array(neg_node->value, expected, 3));
     free_expr(neg_node);
-    free_expr(var);
     return 0;
 }
 
@@ -42,7 +41,6 @@ const char *test_neg_jacobian(void)
               cmp_int_array(neg_node->jacobian->i, expected_i, 3));
 
     free_expr(neg_node);
-    free_expr(var);
     return 0;
 }
 
@@ -74,7 +72,5 @@ const char *test_neg_chain(void)
               cmp_int_array(neg2->jacobian->i, expected_i, 3));
 
     free_expr(neg2);
-    free_expr(neg1);
-    free_expr(var);
     return 0;
 }
