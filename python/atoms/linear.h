@@ -23,10 +23,10 @@ static PyObject *py_make_linear(PyObject *self, PyObject *args)
 
     PyArrayObject *data_array =
         (PyArrayObject *) PyArray_FROM_OTF(data_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    PyArrayObject *indices_array =
-        (PyArrayObject *) PyArray_FROM_OTF(indices_obj, NPY_INT32, NPY_ARRAY_IN_ARRAY);
-    PyArrayObject *indptr_array =
-        (PyArrayObject *) PyArray_FROM_OTF(indptr_obj, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    PyArrayObject *indices_array = (PyArrayObject *) PyArray_FROM_OTF(
+        indices_obj, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    PyArrayObject *indptr_array = (PyArrayObject *) PyArray_FROM_OTF(
+        indptr_obj, NPY_INT32, NPY_ARRAY_IN_ARRAY);
 
     if (!data_array || !indices_array || !indptr_array)
     {

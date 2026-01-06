@@ -27,7 +27,8 @@ static PyObject *py_problem_objective_forward(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    double obj_val = problem_objective_forward(prob, (const double *) PyArray_DATA(u_array));
+    double obj_val =
+        problem_objective_forward(prob, (const double *) PyArray_DATA(u_array));
 
     Py_DECREF(u_array);
     return Py_BuildValue("d", obj_val);

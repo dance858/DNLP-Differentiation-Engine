@@ -12,8 +12,8 @@ static PyObject *py_make_constant(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    PyArrayObject *values_array =
-        (PyArrayObject *) PyArray_FROM_OTF(values_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyArrayObject *values_array = (PyArrayObject *) PyArray_FROM_OTF(
+        values_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (!values_array)
     {
         return NULL;

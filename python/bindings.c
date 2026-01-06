@@ -3,23 +3,23 @@
 #include <numpy/arrayobject.h>
 
 /* Include atom bindings */
-#include "atoms/variable.h"
+#include "atoms/add.h"
 #include "atoms/constant.h"
+#include "atoms/exp.h"
 #include "atoms/linear.h"
 #include "atoms/log.h"
-#include "atoms/exp.h"
-#include "atoms/add.h"
-#include "atoms/sum.h"
 #include "atoms/neg.h"
 #include "atoms/promote.h"
+#include "atoms/sum.h"
+#include "atoms/variable.h"
 
 /* Include problem bindings */
-#include "problem/make_problem.h"
-#include "problem/init_derivatives.h"
-#include "problem/objective_forward.h"
 #include "problem/constraint_forward.h"
 #include "problem/gradient.h"
+#include "problem/init_derivatives.h"
 #include "problem/jacobian.h"
+#include "problem/make_problem.h"
+#include "problem/objective_forward.h"
 
 static int numpy_initialized = 0;
 
@@ -41,12 +41,18 @@ static PyMethodDef DNLPMethods[] = {
     {"make_sum", py_make_sum, METH_VARARGS, "Create sum node"},
     {"make_neg", py_make_neg, METH_VARARGS, "Create neg node"},
     {"make_promote", py_make_promote, METH_VARARGS, "Create promote node"},
-    {"make_problem", py_make_problem, METH_VARARGS, "Create problem from objective and constraints"},
-    {"problem_init_derivatives", py_problem_init_derivatives, METH_VARARGS, "Initialize derivative structures"},
-    {"problem_objective_forward", py_problem_objective_forward, METH_VARARGS, "Evaluate objective only"},
-    {"problem_constraint_forward", py_problem_constraint_forward, METH_VARARGS, "Evaluate constraints only"},
-    {"problem_gradient", py_problem_gradient, METH_VARARGS, "Compute objective gradient"},
-    {"problem_jacobian", py_problem_jacobian, METH_VARARGS, "Compute constraint jacobian"},
+    {"make_problem", py_make_problem, METH_VARARGS,
+     "Create problem from objective and constraints"},
+    {"problem_init_derivatives", py_problem_init_derivatives, METH_VARARGS,
+     "Initialize derivative structures"},
+    {"problem_objective_forward", py_problem_objective_forward, METH_VARARGS,
+     "Evaluate objective only"},
+    {"problem_constraint_forward", py_problem_constraint_forward, METH_VARARGS,
+     "Evaluate constraints only"},
+    {"problem_gradient", py_problem_gradient, METH_VARARGS,
+     "Compute objective gradient"},
+    {"problem_jacobian", py_problem_jacobian, METH_VARARGS,
+     "Compute constraint jacobian"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef dnlp_module = {PyModuleDef_HEAD_INIT, "DNLP_diff_engine",

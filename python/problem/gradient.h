@@ -27,7 +27,8 @@ static PyObject *py_problem_gradient(PyObject *self, PyObject *args)
     {
         return NULL;
     }
-    memcpy(PyArray_DATA((PyArrayObject *) out), prob->gradient_values, size * sizeof(double));
+    memcpy(PyArray_DATA((PyArrayObject *) out), prob->gradient_values,
+           size * sizeof(double));
 
     return out;
 }
