@@ -49,6 +49,14 @@ typedef struct hstack_expr
     CSR_Matrix *CSR_work; /* for summing Hessians of children */
 } hstack_expr;
 
+/* Elementwise multiplication */
+typedef struct elementwise_mult_expr
+{
+    expr base;
+    CSR_Matrix *CSR_work1;
+    CSR_Matrix *CSR_work2;
+} elementwise_mult_expr;
+
 /* Promote (broadcast) to larger shape */
 typedef struct promote_expr
 {
