@@ -190,9 +190,6 @@ expr *new_prod(expr *child)
     node->eval_wsum_hess = eval_wsum_hess;
     node->left = child;
     expr_retain(child);
-
-    pnode->num_of_zeros = 0;
-
     return node;
 }
 

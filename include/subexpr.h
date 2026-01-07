@@ -46,7 +46,7 @@ typedef struct prod_expr
     expr base;
     int num_of_zeros;
     int zero_index;      /* index of zero element when num_of_zeros == 1 */
-    double prod_nonzero; /* product of non-zero elements when num_of_zeros == 1 */
+    double prod_nonzero; /* product of non-zero elements */
 } prod_expr;
 
 /* Horizontal stack (concatenate) */
