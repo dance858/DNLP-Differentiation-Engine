@@ -159,10 +159,9 @@ void problem_jacobian(problem *prob)
         CSR_Matrix *cjac = c->jacobian;
 
         /* Copy row pointers with offset */
-        for (int r = 0; r < cjac->m; r++)
+        for (int r = 1; r <= cjac->m; r++)
         {
-            int row_nnz = cjac->p[r + 1] - cjac->p[r];
-            stacked->p[row_offset + r + 1] = stacked->p[row_offset + r] + row_nnz;
+            stacked->p[row_offset + r] = nnz_offset + cjac->p[r];
         }
 
         /* Copy column indices and values */

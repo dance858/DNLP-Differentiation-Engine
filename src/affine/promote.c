@@ -106,10 +106,7 @@ static void eval_wsum_hess(expr *node, const double *w)
 
     /* copy values only (sparsity pattern set in wsum_hess_init) */
     CSR_Matrix *child_hess = node->left->wsum_hess;
-    for (int k = 0; k < child_hess->nnz; k++)
-    {
-        node->wsum_hess->x[k] = child_hess->x[k];
-    }
+    memcpy(node->wsum_hess->x, child_hess->x, child_hess->nnz * sizeof(double));
 }
 
 static bool is_affine(const expr *node)
