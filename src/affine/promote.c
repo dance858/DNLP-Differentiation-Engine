@@ -24,20 +24,19 @@ static void jacobian_init(expr *node)
     /* Each output row copies the single row from child's jacobian */
     CSR_Matrix *child_jac = node->left->jacobian;
     int nnz = node->size * child_jac->nnz;
-    if (nnz == 0) nnz = 1;
 
     node->jacobian = new_csr_matrix(node->size, node->n_vars, nnz);
     CSR_Matrix *jac = node->jacobian;
 
     /* Build sparsity pattern by replicating child's single row */
+    int child_nnz = child_jac->p[1] - child_jac->p[0];
     jac->nnz = 0;
     for (int row = 0; row < node->size; row++)
     {
         jac->p[row] = jac->nnz;
-        for (int k = child_jac->p[0]; k < child_jac->p[1]; k++)
-        {
-            jac->i[jac->nnz++] = child_jac->i[k];
-        }
+        memcpy(jac->i + jac->nnz, child_jac->i + child_jac->p[0],
+               child_nnz * sizeof(int));
+        jac->nnz += child_nnz;
     }
     jac->p[node->size] = jac->nnz;
 }
@@ -53,7 +52,7 @@ static void eval_jacobian(expr *node)
     /* Copy child's row values to each output row */
     for (int row = 0; row < node->size; row++)
     {
-        memcpy(&jac->x[row * child_nnz], &child_jac->x[child_jac->p[0]],
+        memcpy(jac->x + row * child_nnz, child_jac->x + child_jac->p[0],
                child_nnz * sizeof(double));
     }
 }

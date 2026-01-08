@@ -17,6 +17,7 @@
 #include "jacobian_tests/test_elementwise_mult.h"
 #include "jacobian_tests/test_hstack.h"
 #include "jacobian_tests/test_log.h"
+#include "jacobian_tests/test_promote.h"
 #include "jacobian_tests/test_quad_form.h"
 #include "jacobian_tests/test_quad_over_lin.h"
 #include "jacobian_tests/test_rel_entr.h"
@@ -54,8 +55,6 @@ int main(void)
     mu_run_test(test_neg_jacobian, tests_run);
     mu_run_test(test_neg_chain, tests_run);
     mu_run_test(test_promote_scalar_to_vector, tests_run);
-    mu_run_test(test_promote_scalar_jacobian, tests_run);
-    mu_run_test(test_promote_scalar_to_matrix_jacobian, tests_run);
     mu_run_test(test_exp, tests_run);
     mu_run_test(test_log, tests_run);
     mu_run_test(test_composite, tests_run);
@@ -91,6 +90,8 @@ int main(void)
     mu_run_test(test_jacobian_sum_log_axis_1, tests_run);
     mu_run_test(test_jacobian_hstack_vectors, tests_run);
     mu_run_test(test_jacobian_hstack_matrix, tests_run);
+    mu_run_test(test_promote_scalar_jacobian, tests_run);
+    mu_run_test(test_promote_scalar_to_matrix_jacobian, tests_run);
     mu_run_test(test_wsum_hess_multiply_1, tests_run);
     mu_run_test(test_wsum_hess_multiply_2, tests_run);
 
