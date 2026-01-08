@@ -49,38 +49,33 @@ const char *test_promote_scalar_jacobian(void)
     return 0;
 }
 
-const char *test_promote_vector_jacobian(void)
+const char *test_promote_scalar_to_matrix_jacobian(void)
 {
-    /* Promote 2-vector to 4-vector, check jacobian */
-    double u[2] = {1.0, 2.0};
-    expr *var = new_variable(2, 1, 0, 2);
-    expr *promote_node = new_promote(var, 4, 1);
+    /* Promote scalar to 2x3 matrix, check jacobian */
+    double u[1] = {7.0};
+    expr *var = new_variable(1, 1, 0, 1);
+    expr *promote_node = new_promote(var, 2, 3);
     promote_node->forward(promote_node, u);
 
-    /* Pattern repeats: [1, 2, 1, 2] */
-    double expected_val[4] = {1.0, 2.0, 1.0, 2.0};
-    mu_assert("promote vector forward failed",
-              cmp_double_array(promote_node->value, expected_val, 4));
+    /* Forward: all 6 elements should be 7.0 */
+    double expected_val[6] = {7.0, 7.0, 7.0, 7.0, 7.0, 7.0};
+    mu_assert("promote scalar->matrix forward failed",
+              cmp_double_array(promote_node->value, expected_val, 6));
 
     promote_node->jacobian_init(promote_node);
     promote_node->eval_jacobian(promote_node);
 
-    /* Jacobian is 4x2:
-     * Row 0: [1, 0] (output 0 depends on input 0)
-     * Row 1: [0, 1] (output 1 depends on input 1)
-     * Row 2: [1, 0] (output 2 depends on input 0)
-     * Row 3: [0, 1] (output 3 depends on input 1)
-     */
-    double expected_x[4] = {1.0, 1.0, 1.0, 1.0};
-    int expected_p[5] = {0, 1, 2, 3, 4};
-    int expected_i[4] = {0, 1, 0, 1};
+    /* Jacobian is 6x1 with all 1s (each output depends on same scalar input) */
+    double expected_x[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    int expected_p[7] = {0, 1, 2, 3, 4, 5, 6};
+    int expected_i[6] = {0, 0, 0, 0, 0, 0};
 
-    mu_assert("promote vector jacobian vals fail",
-              cmp_double_array(promote_node->jacobian->x, expected_x, 4));
-    mu_assert("promote vector jacobian rows fail",
-              cmp_int_array(promote_node->jacobian->p, expected_p, 5));
-    mu_assert("promote vector jacobian cols fail",
-              cmp_int_array(promote_node->jacobian->i, expected_i, 4));
+    mu_assert("promote matrix jacobian vals fail",
+              cmp_double_array(promote_node->jacobian->x, expected_x, 6));
+    mu_assert("promote matrix jacobian rows fail",
+              cmp_int_array(promote_node->jacobian->p, expected_p, 7));
+    mu_assert("promote matrix jacobian cols fail",
+              cmp_int_array(promote_node->jacobian->i, expected_i, 6));
 
     free_expr(promote_node);
     return 0;

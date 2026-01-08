@@ -2,50 +2,41 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Promote broadcasts a child expression to a larger shape.
- * Typically used to broadcast a scalar to a vector. */
+/* Promote broadcasts a scalar expression to a vector/matrix shape.
+ * This matches CVXPY's promote atom which only handles scalars. */
 
 static void forward(expr *node, const double *u)
 {
-    /* child's forward pass */
     node->left->forward(node->left, u);
 
-    /* broadcast child value to output shape */
-    int child_size = node->left->size;
+    /* broadcast scalar value to all output elements */
+    double val = node->left->value[0];
     for (int i = 0; i < node->size; i++)
     {
-        /* replicate pattern: output[i] = child[i % child_size] */
-        node->value[i] = node->left->value[i % child_size];
+        node->value[i] = val;
     }
 }
 
 static void jacobian_init(expr *node)
 {
-    /* initialize child's jacobian */
     node->left->jacobian_init(node->left);
 
-    /* Each output row copies a row from child's jacobian (with wrapping).
-     * For scalar->vector: all rows are copies of the single child row.
-     * nnz = (output_size / child_size) * child_jac_nnz */
+    /* Each output row copies the single row from child's jacobian */
     CSR_Matrix *child_jac = node->left->jacobian;
-    int child_size = node->left->size;
-    int repeat = (node->size + child_size - 1) / child_size;
-    int nnz_max = repeat * child_jac->nnz;
-    if (nnz_max == 0) nnz_max = 1;
+    int nnz = node->size * child_jac->nnz;
+    if (nnz == 0) nnz = 1;
 
-    node->jacobian = new_csr_matrix(node->size, node->n_vars, nnz_max);
+    node->jacobian = new_csr_matrix(node->size, node->n_vars, nnz);
     CSR_Matrix *jac = node->jacobian;
 
-    /* Build sparsity pattern by replicating child's rows */
+    /* Build sparsity pattern by replicating child's single row */
     jac->nnz = 0;
     for (int row = 0; row < node->size; row++)
     {
         jac->p[row] = jac->nnz;
-        int child_row = row % child_size;
-        for (int k = child_jac->p[child_row]; k < child_jac->p[child_row + 1]; k++)
+        for (int k = child_jac->p[0]; k < child_jac->p[1]; k++)
         {
-            jac->i[jac->nnz] = child_jac->i[k];
-            jac->nnz++;
+            jac->i[jac->nnz++] = child_jac->i[k];
         }
     }
     jac->p[node->size] = jac->nnz;
@@ -53,58 +44,47 @@ static void jacobian_init(expr *node)
 
 static void eval_jacobian(expr *node)
 {
-    /* evaluate child's jacobian */
     node->left->eval_jacobian(node->left);
 
     CSR_Matrix *child_jac = node->left->jacobian;
     CSR_Matrix *jac = node->jacobian;
-    int child_size = node->left->size;
+    int child_nnz = child_jac->p[1] - child_jac->p[0];
 
-    /* Copy values only (sparsity pattern set in jacobian_init) */
-    int idx = 0;
+    /* Copy child's row values to each output row */
     for (int row = 0; row < node->size; row++)
     {
-        int child_row = row % child_size;
-        for (int k = child_jac->p[child_row]; k < child_jac->p[child_row + 1]; k++)
-        {
-            jac->x[idx++] = child_jac->x[k];
-        }
+        memcpy(&jac->x[row * child_nnz], &child_jac->x[child_jac->p[0]],
+               child_nnz * sizeof(double));
     }
 }
 
 static void wsum_hess_init(expr *node)
 {
-    /* initialize child's wsum_hess */
     node->left->wsum_hess_init(node->left);
 
     /* same sparsity as child since we're summing weights */
     CSR_Matrix *child_hess = node->left->wsum_hess;
     node->wsum_hess = new_csr_matrix(child_hess->m, child_hess->n, child_hess->nnz);
 
-    /* copy row pointers and column indices (sparsity pattern is constant) */
+    /* copy sparsity pattern */
     memcpy(node->wsum_hess->p, child_hess->p, (child_hess->m + 1) * sizeof(int));
     memcpy(node->wsum_hess->i, child_hess->i, child_hess->nnz * sizeof(int));
     node->wsum_hess->nnz = child_hess->nnz;
-
-    /* allocate workspace for summing weights */
-    node->dwork = (double *) malloc(node->left->size * sizeof(double));
 }
 
 static void eval_wsum_hess(expr *node, const double *w)
 {
-    /* Sum weights that correspond to the same child element */
-    int child_size = node->left->size;
-    double *summed_w = node->dwork;
-    memset(summed_w, 0, child_size * sizeof(double));
+    /* Sum all weights (they all correspond to the same scalar child) */
+    double sum_w = 0.0;
     for (int i = 0; i < node->size; i++)
     {
-        summed_w[i % child_size] += w[i];
+        sum_w += w[i];
     }
 
-    /* evaluate child's wsum_hess with summed weights */
-    node->left->eval_wsum_hess(node->left, summed_w);
+    /* evaluate child's wsum_hess with summed weight */
+    node->left->eval_wsum_hess(node->left, &sum_w);
 
-    /* copy values only (sparsity pattern set in wsum_hess_init) */
+    /* copy values */
     CSR_Matrix *child_hess = node->left->wsum_hess;
     memcpy(node->wsum_hess->x, child_hess->x, child_hess->nnz * sizeof(double));
 }
@@ -121,11 +101,11 @@ expr *new_promote(expr *child, int d1, int d2)
     node->jacobian_init = jacobian_init;
     node->eval_jacobian = eval_jacobian;
     node->is_affine = is_affine;
+    node->wsum_hess_init = wsum_hess_init;
+    node->eval_wsum_hess = eval_wsum_hess;
 
     node->left = child;
     expr_retain(child);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     return node;
 }

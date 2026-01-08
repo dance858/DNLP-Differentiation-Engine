@@ -55,7 +55,7 @@ int main(void)
     mu_run_test(test_neg_chain, tests_run);
     mu_run_test(test_promote_scalar_to_vector, tests_run);
     mu_run_test(test_promote_scalar_jacobian, tests_run);
-    mu_run_test(test_promote_vector_jacobian, tests_run);
+    mu_run_test(test_promote_scalar_to_matrix_jacobian, tests_run);
     mu_run_test(test_exp, tests_run);
     mu_run_test(test_log, tests_run);
     mu_run_test(test_composite, tests_run);
