@@ -783,3 +783,69 @@ void symmetrize_csr(const int *Ap, const int *Ai, int m, CSR_Matrix *C)
 
     free(counts);
 }
+
+static int compare_int_asc(const void *a, const void *b)
+{
+    int ia = *((const int *) a);
+    int ib = *((const int *) b);
+    return (ia > ib) - (ia < ib);
+}
+
+/* iwork must have size A->n, and idx_map must have size A->nnz */
+void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwork,
+                                    int *idx_map)
+{
+    // -------------------------------------------------------------------
+    //           Build sparsity pattern of the summed row
+    // -------------------------------------------------------------------
+    int *cols = iwork;
+    memcpy(cols, A->i, A->nnz * sizeof(int));
+    qsort(cols, A->nnz, sizeof(int), compare_int_asc);
+
+    int unique_nnz = 0;
+    int prev_col = -1;
+    for (int j = 0; j < A->nnz; j++)
+    {
+        if (cols[j] != prev_col)
+        {
+            C->i[unique_nnz] = cols[j];
+            prev_col = cols[j];
+            unique_nnz++;
+        }
+    }
+
+    C->p[0] = 0;
+    C->p[1] = unique_nnz;
+    C->nnz = unique_nnz;
+
+    // -------------------------------------------------------------------
+    //         Map child values to summed-row positions
+    // -------------------------------------------------------------------
+    int *col_to_pos = iwork;
+    for (int idx = 0; idx < unique_nnz; idx++)
+    {
+        col_to_pos[C->i[idx]] = idx;
+    }
+
+    for (int i = 0; i < A->m; i++)
+    {
+        for (int j = A->p[i]; j < A->p[i + 1]; j++)
+        {
+            idx_map[j] = col_to_pos[A->i[j]];
+        }
+    }
+}
+
+void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+                                  const int *idx_map)
+{
+    memset(C->x, 0, C->nnz * sizeof(double));
+
+    for (int row = 0; row < A->m; row++)
+    {
+        for (int j = A->p[row]; j < A->p[row + 1]; j++)
+        {
+            C->x[idx_map[j]] += A->x[j];
+        }
+    }
+}

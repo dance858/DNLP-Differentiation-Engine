@@ -62,6 +62,7 @@ static void jacobian_init(expr *node)
 {
     expr *x = node->left;
     sum_expr *snode = (sum_expr *) node;
+    int axis = snode->axis;
 
     /* initialize child's jacobian */
     x->jacobian_init(x);
@@ -69,6 +70,14 @@ static void jacobian_init(expr *node)
     /* we never have to store more than the child's nnz */
     node->jacobian = new_csr_matrix(node->d1, node->n_vars, x->jacobian->nnz);
     snode->int_double_pairs = new_int_double_pair_array(x->jacobian->nnz);
+
+    if (axis == -1)
+    {
+        node->iwork = malloc(x->n_vars * sizeof(int));
+        snode->row_sum_idx_map = malloc(x->jacobian->nnz * sizeof(int));
+        sum_all_rows_csr_fill_sparsity(x->jacobian, node->jacobian, node->iwork,
+                                       snode->row_sum_idx_map);
+    }
 }
 
 static void eval_jacobian(expr *node)
@@ -83,7 +92,9 @@ static void eval_jacobian(expr *node)
     /* sum rows or columns of child's jacobian */
     if (axis == -1)
     {
-        sum_all_rows_csr(x->jacobian, node->jacobian, snode->int_double_pairs);
+        // sum_all_rows_csr(x->jacobian, node->jacobian, snode->int_double_pairs);
+        sum_all_rows_csr_fill_values(x->jacobian, node->jacobian,
+                                     snode->row_sum_idx_map);
     }
     else if (axis == 0)
     {

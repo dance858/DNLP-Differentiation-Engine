@@ -85,6 +85,14 @@ void sum_scaled_csr_matrices_fill_values(const CSR_Matrix *A, const CSR_Matrix *
 void sum_all_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                       struct int_double_pair *pairs);
 
+/* iwork must have size A->n, and idx_map must have size A->nnz */
+void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwork,
+                                    int *idx_map);
+
+/* Fill values of summed rows using precomputed idx_map and sparsity of C */
+void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+                                  const int *idx_map);
+
 /* Sum blocks of rows of A into a matrix C */
 void sum_block_of_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                            struct int_double_pair *pairs, int row_block_size);
