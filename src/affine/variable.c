@@ -21,12 +21,6 @@ static void jacobian_init(expr *node)
 
 static void eval_jacobian(expr *node)
 {
-    /* Jacobian is already initialized with correct values */
-    (void) node;
-}
-
-static void eval_jacobian(expr *node)
-{
     /* Variable jacobian never changes - nothing to evaluate */
     (void) node;
 }
