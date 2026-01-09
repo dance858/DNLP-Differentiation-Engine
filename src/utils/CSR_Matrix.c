@@ -263,6 +263,40 @@ void sum_csr_matrices_fill_values(const CSR_Matrix *A, const CSR_Matrix *B,
     }
 }
 
+void sum_scaled_csr_matrices_fill_values(const CSR_Matrix *A, const CSR_Matrix *B,
+                                         CSR_Matrix *C, const double *d1,
+                                         const double *d2)
+{
+    /* Assumes C->p and C->i already contain the sparsity pattern of A+B.
+       Fills only C->x accordingly with scaling. */
+    for (int row = 0; row < A->m; row++)
+    {
+        int a_ptr = A->p[row];
+        int a_end = A->p[row + 1];
+        int b_ptr = B->p[row];
+        int b_end = B->p[row + 1];
+
+        for (int c_ptr = C->p[row]; c_ptr < C->p[row + 1]; c_ptr++)
+        {
+            int col = C->i[c_ptr];
+            double val = 0.0;
+
+            if (a_ptr < a_end && A->i[a_ptr] == col)
+            {
+                val += d1[row] * A->x[a_ptr];
+                a_ptr++;
+            }
+
+            if (b_ptr < b_end && B->i[b_ptr] == col)
+            {
+                val += d2[row] * B->x[b_ptr];
+                b_ptr++;
+            }
+            C->x[c_ptr] = val;
+        }
+    }
+}
+
 void sum_scaled_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C,
                              const double *d1, const double *d2)
 {

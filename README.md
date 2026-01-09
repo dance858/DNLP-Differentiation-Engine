@@ -4,3 +4,7 @@
 6. AX where X is a matrix. Can that happen? How is that canonicalized? Maybe it can't happen.
 7. Must be able to compute jacobian and hessian of A @ phi(x), so linear operator needs other code! This requires new infrastructure, I think.
 8. Shortcut hessians of affine stuff?
+
+Going through all atoms to see that sparsity pattern is computed in jacobian:
+1. sum - not ok
+2. trace - not ok
