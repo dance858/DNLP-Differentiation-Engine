@@ -98,8 +98,8 @@ static void eval_jacobian(expr *node)
     /* evaluate child's jacobian */
     x->eval_jacobian(x);
 
-    /* we have precomputed an idx map between the nonzeros of A and the result in C,
-       so we just accumulate accordingly */
+    /* we have precomputed an idx map between the nonzeros of the child's jacobian
+       and this node's jacobian, so we just accumulate accordingly */
     idx_map_accumulator(x->jacobian, ((sum_expr *) node)->idx_map,
                         node->jacobian->x);
 }
