@@ -6,6 +6,8 @@
 #include "forward_pass/affine/test_add.h"
 #include "forward_pass/affine/test_hstack.h"
 #include "forward_pass/affine/test_linear_op.h"
+#include "forward_pass/affine/test_neg.h"
+#include "forward_pass/affine/test_promote.h"
 #include "forward_pass/affine/test_sum.h"
 #include "forward_pass/affine/test_variable_constant.h"
 #include "forward_pass/composite/test_composite.h"
@@ -13,13 +15,16 @@
 #include "forward_pass/elementwise/test_log.h"
 #include "jacobian_tests/test_composite.h"
 #include "jacobian_tests/test_elementwise_mult.h"
+#include "jacobian_tests/test_neg.h"
 #include "jacobian_tests/test_hstack.h"
 #include "jacobian_tests/test_log.h"
+#include "jacobian_tests/test_promote.h"
 #include "jacobian_tests/test_prod.h"
 #include "jacobian_tests/test_quad_form.h"
 #include "jacobian_tests/test_quad_over_lin.h"
 #include "jacobian_tests/test_rel_entr.h"
 #include "jacobian_tests/test_sum.h"
+#include "problem/test_problem.h"
 #include "jacobian_tests/test_trace.h"
 #include "utils/test_csc_matrix.h"
 #include "utils/test_csr_matrix.h"
@@ -51,6 +56,8 @@ int main(void)
     mu_run_test(test_constant, tests_run);
     mu_run_test(test_addition, tests_run);
     mu_run_test(test_linear_op, tests_run);
+    mu_run_test(test_neg_forward, tests_run);
+    mu_run_test(test_promote_scalar_to_vector, tests_run);
     mu_run_test(test_exp, tests_run);
     mu_run_test(test_log, tests_run);
     mu_run_test(test_composite, tests_run);
@@ -61,6 +68,8 @@ int main(void)
     mu_run_test(test_hstack_forward_matrix, tests_run);
 
     printf("\n--- Jacobian Tests ---\n");
+    mu_run_test(test_neg_jacobian, tests_run);
+    mu_run_test(test_neg_chain, tests_run);
     mu_run_test(test_jacobian_log, tests_run);
     mu_run_test(test_jacobian_log_matrix, tests_run);
     mu_run_test(test_jacobian_composite_log, tests_run);
@@ -89,6 +98,10 @@ int main(void)
     mu_run_test(test_jacobian_sum_log_axis_1, tests_run);
     mu_run_test(test_jacobian_hstack_vectors, tests_run);
     mu_run_test(test_jacobian_hstack_matrix, tests_run);
+    mu_run_test(test_promote_scalar_jacobian, tests_run);
+    mu_run_test(test_promote_scalar_to_matrix_jacobian, tests_run);
+    mu_run_test(test_wsum_hess_multiply_1, tests_run);
+    mu_run_test(test_wsum_hess_multiply_2, tests_run);
     mu_run_test(test_jacobian_trace_variable, tests_run);
     mu_run_test(test_jacobian_trace_composite, tests_run);
 
@@ -149,6 +162,14 @@ int main(void)
     mu_run_test(test_ATA_alloc_random, tests_run);
     mu_run_test(test_ATA_alloc_random2, tests_run);
     mu_run_test(test_BTA_alloc_and_BTDA_fill, tests_run);
+
+    printf("\n--- Problem Struct Tests ---\n");
+    mu_run_test(test_problem_new_free, tests_run);
+    mu_run_test(test_problem_objective_forward, tests_run);
+    mu_run_test(test_problem_gradient, tests_run);
+    mu_run_test(test_problem_jacobian, tests_run);
+    mu_run_test(test_problem_jacobian_multi, tests_run);
+    mu_run_test(test_problem_constraint_forward, tests_run);
 
     printf("\n=== All %d tests passed ===\n", tests_run);
 
