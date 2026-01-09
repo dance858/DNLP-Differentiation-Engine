@@ -110,6 +110,13 @@ void diag_csr_mult_fill_values(const double *d, const CSR_Matrix *A, CSR_Matrix 
     }
 }
 
+static int compare_int_asc(const void *a, const void *b)
+{
+    int ia = *((const int *) a);
+    int ib = *((const int *) b);
+    return (ia > ib) - (ia < ib);
+}
+
 void sum_csr_matrices(const CSR_Matrix *A, const CSR_Matrix *B, CSR_Matrix *C)
 {
     /* A and B must be different from C */
@@ -459,6 +466,95 @@ void sum_block_of_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
     }
 }
 
+/* iwork must have size max(A->n, A->nnz), and idx_map must have size A->nnz */
+void sum_block_of_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C,
+                                         int row_block_size, int *iwork,
+                                         int *idx_map)
+{
+    assert(A->m % row_block_size == 0);
+    int n_blocks = A->m / row_block_size;
+    assert(C->m == n_blocks);
+
+    C->n = A->n;
+    C->p[0] = 0;
+    C->nnz = 0;
+
+    int *cols = iwork;
+    int *col_to_pos = iwork;
+
+    for (int block = 0; block < n_blocks; block++)
+    {
+        int start_row = block * row_block_size;
+        int end_row = start_row + row_block_size;
+
+        // -----------------------------------------------------------------
+        // Build sparsity pattern of the row resulting from summing
+        // the block of rows from A
+        // -----------------------------------------------------------------
+        C->p[block] = C->nnz;
+        int count = 0;
+        for (int row = start_row; row < end_row; row++)
+        {
+            for (int j = A->p[row]; j < A->p[row + 1]; j++)
+            {
+                cols[count++] = A->i[j];
+            }
+        }
+
+        /* Sort columns and write unique pattern into C->i */
+        qsort(cols, count, sizeof(int), compare_int_asc);
+
+        int unique_nnz = 0;
+        int prev_col = -1;
+        for (int t = 0; t < count; t++)
+        {
+            int col = cols[t];
+            if (t == 0 || col != prev_col)
+            {
+                C->i[C->nnz + unique_nnz] = col;
+                prev_col = col;
+                unique_nnz++;
+            }
+        }
+
+        C->nnz += unique_nnz;
+        C->p[block + 1] = C->nnz;
+
+        // -----------------------------------------------------------------
+        //         Build idx_map for all entries in this block
+        // -----------------------------------------------------------------
+        int row_start = C->p[block];
+        for (int idx = 0; idx < unique_nnz; idx++)
+        {
+            col_to_pos[C->i[row_start + idx]] = row_start + idx;
+        }
+
+        for (int row = start_row; row < end_row; row++)
+        {
+            for (int j = A->p[row]; j < A->p[row + 1]; j++)
+            {
+                idx_map[j] = col_to_pos[A->i[j]];
+            }
+        }
+    }
+}
+
+/* TODO: maybe we don't need this? It is identical to sum_csr_fill_values.
+Maybe we can have a more generic function that accumulates using the index map.*/
+void sum_block_of_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+                                       const int *idx_map)
+{
+    memset(C->x, 0, C->nnz * sizeof(double));
+
+    for (int row = 0; row < A->m; row++)
+    {
+        for (int j = A->p[row]; j < A->p[row + 1]; j++)
+        {
+            C->x[idx_map[j]] += A->x[j];
+        }
+    }
+}
+
 void sum_evenly_spaced_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                                 struct int_double_pair *pairs, int row_spacing)
 {
@@ -784,14 +880,6 @@ void symmetrize_csr(const int *Ap, const int *Ai, int m, CSR_Matrix *C)
     free(counts);
 }
 
-static int compare_int_asc(const void *a, const void *b)
-{
-    int ia = *((const int *) a);
-    int ib = *((const int *) b);
-    return (ia > ib) - (ia < ib);
-}
-
-/* iwork must have size A->n, and idx_map must have size A->nnz */
 void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwork,
                                     int *idx_map)
 {

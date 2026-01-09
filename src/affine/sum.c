@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 static void forward(expr *node, const double *u)
 {
     int i, j, end;
@@ -73,10 +75,21 @@ static void jacobian_init(expr *node)
 
     if (axis == -1)
     {
-        node->iwork = malloc(x->n_vars * sizeof(int));
+        node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
         snode->row_sum_idx_map = malloc(x->jacobian->nnz * sizeof(int));
         sum_all_rows_csr_fill_sparsity(x->jacobian, node->jacobian, node->iwork,
                                        snode->row_sum_idx_map);
+    }
+    else if (axis == 0)
+    {
+        node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
+        snode->row_sum_idx_map = malloc(x->jacobian->nnz * sizeof(int));
+        sum_block_of_rows_csr_fill_sparsity(x->jacobian, node->jacobian, x->d1,
+                                            node->iwork, snode->row_sum_idx_map);
+    }
+    else if (axis == 1)
+    {
+        // assert(false && "not implemented yet");
     }
 }
 
@@ -84,6 +97,7 @@ static void eval_jacobian(expr *node)
 {
     expr *x = node->left;
     sum_expr *snode = (sum_expr *) node;
+    int *idx_map = snode->row_sum_idx_map;
     int axis = snode->axis;
 
     /* evaluate child's jacobian */
@@ -92,16 +106,15 @@ static void eval_jacobian(expr *node)
     /* sum rows or columns of child's jacobian */
     if (axis == -1)
     {
-        // sum_all_rows_csr(x->jacobian, node->jacobian, snode->int_double_pairs);
-        sum_all_rows_csr_fill_values(x->jacobian, node->jacobian,
-                                     snode->row_sum_idx_map);
+        sum_all_rows_csr_fill_values(x->jacobian, node->jacobian, idx_map);
     }
     else if (axis == 0)
     {
-        sum_block_of_rows_csr(x->jacobian, node->jacobian, snode->int_double_pairs,
-                              x->d1);
+        // sum_block_of_rows_csr(x->jacobian, node->jacobian,
+        // snode->int_double_pairs,
+        //                       x->d1);
+        sum_block_of_rows_csr_fill_values(x->jacobian, node->jacobian, idx_map);
     }
-
     else if (axis == 1)
     {
         sum_evenly_spaced_rows_csr(x->jacobian, node->jacobian,
