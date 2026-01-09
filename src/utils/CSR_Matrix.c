@@ -467,9 +467,10 @@ void sum_block_of_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
 }
 
 /* iwork must have size max(A->n, A->nnz), and idx_map must have size A->nnz */
-void sum_block_of_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C,
-                                         int row_block_size, int *iwork,
-                                         int *idx_map)
+void sum_block_of_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A,
+                                                     CSR_Matrix *C,
+                                                     int row_block_size, int *iwork,
+                                                     int *idx_map)
 {
     assert(A->m % row_block_size == 0);
     int n_blocks = A->m / row_block_size;
@@ -539,8 +540,7 @@ void sum_block_of_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C,
     }
 }
 
-/* TODO: maybe we don't need this? It is identical to sum_csr_fill_values.
-Maybe we can have a more generic function that accumulates using the index map.*/
+/*
 void sum_block_of_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
                                        const int *idx_map)
 {
@@ -554,6 +554,7 @@ void sum_block_of_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
         }
     }
 }
+*/
 
 void sum_evenly_spaced_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                                 struct int_double_pair *pairs, int row_spacing)
@@ -603,6 +604,103 @@ void sum_evenly_spaced_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
     }
 }
 
+/* iwork must have size max(A->n, A->nnz), and idx_map must have size A->nnz */
+void sum_evenly_spaced_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A,
+                                                          CSR_Matrix *C,
+                                                          int row_spacing,
+                                                          int *iwork, int *idx_map)
+{
+    assert(C->m == row_spacing);
+    C->n = A->n;
+    C->p[0] = 0;
+    C->nnz = 0;
+
+    int *cols = iwork;
+    int *col_to_pos = iwork;
+
+    for (int C_row = 0; C_row < C->m; C_row++)
+    {
+        // -----------------------------------------------------------------
+        // Build sparsity pattern of the row resulting from summing
+        // evenly spaced rows from A
+        // -----------------------------------------------------------------
+        C->p[C_row] = C->nnz;
+        int count = 0;
+        for (int row = C_row; row < A->m; row += row_spacing)
+        {
+            for (int j = A->p[row]; j < A->p[row + 1]; j++)
+            {
+                cols[count++] = A->i[j];
+            }
+        }
+
+        /* Sort columns and write unique pattern into C->i */
+        qsort(cols, count, sizeof(int), compare_int_asc);
+
+        int unique_nnz = 0;
+        int prev_col = -1;
+        for (int t = 0; t < count; t++)
+        {
+            int col = cols[t];
+            if (t == 0 || col != prev_col)
+            {
+                C->i[C->nnz + unique_nnz] = col;
+                prev_col = col;
+                unique_nnz++;
+            }
+        }
+
+        C->nnz += unique_nnz;
+        C->p[C_row + 1] = C->nnz;
+
+        // -----------------------------------------------------------------
+        //         Build idx_map for all entries in evenly spaced rows
+        // -----------------------------------------------------------------
+        int row_start = C->p[C_row];
+        for (int idx = 0; idx < unique_nnz; idx++)
+        {
+            col_to_pos[C->i[row_start + idx]] = row_start + idx;
+        }
+
+        for (int row = C_row; row < A->m; row += row_spacing)
+        {
+            for (int j = A->p[row]; j < A->p[row + 1]; j++)
+            {
+                idx_map[j] = col_to_pos[A->i[j]];
+            }
+        }
+    }
+}
+
+void idx_map_accumulator(const CSR_Matrix *A, const int *idx_map,
+                         double *accumulator)
+{
+    memset(accumulator, 0, A->nnz * sizeof(double));
+
+    for (int row = 0; row < A->m; row++)
+    {
+        for (int j = A->p[row]; j < A->p[row + 1]; j++)
+        {
+            accumulator[idx_map[j]] += A->x[j];
+        }
+    }
+}
+
+/*
+void sum_evenly_spaced_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+                                            const int *idx_map)
+{
+    memset(C->x, 0, C->nnz * sizeof(double));
+
+    for (int row = 0; row < A->m; row++)
+    {
+        for (int j = A->p[row]; j < A->p[row + 1]; j++)
+        {
+            C->x[idx_map[j]] += A->x[j];
+        }
+    }
+}
+*/
 void sum_spaced_rows_into_row_csr(const CSR_Matrix *A, CSR_Matrix *C,
                                   struct int_double_pair *pairs, int offset,
                                   int spacing)
@@ -880,8 +978,8 @@ void symmetrize_csr(const int *Ap, const int *Ai, int m, CSR_Matrix *C)
     free(counts);
 }
 
-void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwork,
-                                    int *idx_map)
+void sum_all_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A, CSR_Matrix *C,
+                                                int *iwork, int *idx_map)
 {
     // -------------------------------------------------------------------
     //           Build sparsity pattern of the summed row
@@ -924,6 +1022,7 @@ void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwo
     }
 }
 
+/*
 void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
                                   const int *idx_map)
 {
@@ -937,3 +1036,4 @@ void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
         }
     }
 }
+*/

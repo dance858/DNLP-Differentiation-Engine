@@ -73,23 +73,23 @@ static void jacobian_init(expr *node)
     node->jacobian = new_csr_matrix(node->d1, node->n_vars, x->jacobian->nnz);
     snode->int_double_pairs = new_int_double_pair_array(x->jacobian->nnz);
 
+    node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
+    snode->idx_map = malloc(x->jacobian->nnz * sizeof(int));
+
     if (axis == -1)
     {
-        node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
-        snode->row_sum_idx_map = malloc(x->jacobian->nnz * sizeof(int));
-        sum_all_rows_csr_fill_sparsity(x->jacobian, node->jacobian, node->iwork,
-                                       snode->row_sum_idx_map);
+        sum_all_rows_csr_fill_sparsity_and_idx_map(x->jacobian, node->jacobian,
+                                                   node->iwork, snode->idx_map);
     }
     else if (axis == 0)
     {
-        node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
-        snode->row_sum_idx_map = malloc(x->jacobian->nnz * sizeof(int));
-        sum_block_of_rows_csr_fill_sparsity(x->jacobian, node->jacobian, x->d1,
-                                            node->iwork, snode->row_sum_idx_map);
+        sum_block_of_rows_csr_fill_sparsity_and_idx_map(
+            x->jacobian, node->jacobian, x->d1, node->iwork, snode->idx_map);
     }
     else if (axis == 1)
     {
-        // assert(false && "not implemented yet");
+        sum_evenly_spaced_rows_csr_fill_sparsity_and_idx_map(
+            x->jacobian, node->jacobian, node->d1, node->iwork, snode->idx_map);
     }
 }
 
@@ -97,29 +97,14 @@ static void eval_jacobian(expr *node)
 {
     expr *x = node->left;
     sum_expr *snode = (sum_expr *) node;
-    int *idx_map = snode->row_sum_idx_map;
     int axis = snode->axis;
 
     /* evaluate child's jacobian */
     x->eval_jacobian(x);
 
-    /* sum rows or columns of child's jacobian */
-    if (axis == -1)
-    {
-        sum_all_rows_csr_fill_values(x->jacobian, node->jacobian, idx_map);
-    }
-    else if (axis == 0)
-    {
-        // sum_block_of_rows_csr(x->jacobian, node->jacobian,
-        // snode->int_double_pairs,
-        //                       x->d1);
-        sum_block_of_rows_csr_fill_values(x->jacobian, node->jacobian, idx_map);
-    }
-    else if (axis == 1)
-    {
-        sum_evenly_spaced_rows_csr(x->jacobian, node->jacobian,
-                                   snode->int_double_pairs, node->d1);
-    }
+    /* we have precomputed an idx map between the nonzeros of A and the result in C,
+       so we just accumulate accordingly */
+    idx_map_accumulator(x->jacobian, snode->idx_map, node->jacobian->x);
 }
 
 static void wsum_hess_init(expr *node)

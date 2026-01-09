@@ -86,12 +86,16 @@ void sum_all_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                       struct int_double_pair *pairs);
 
 /* iwork must have size max(C->n, A->nnz), and idx_map must have size A->nnz. */
-void sum_all_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C, int *iwork,
-                                    int *idx_map);
+void sum_all_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A, CSR_Matrix *C,
+                                                int *iwork, int *idx_map);
 
 /* Fill values of summed rows using precomputed idx_map and sparsity of C */
-void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
-                                  const int *idx_map);
+// void sum_all_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+//                                  const int *idx_map);
+
+/* Fill accumulator for summing rows using precomputed idx_map for each nnz of A*/
+void idx_map_accumulator(const CSR_Matrix *A, const int *idx_map,
+                         double *accumulator);
 
 /* Sum blocks of rows of A into a matrix C */
 void sum_block_of_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
@@ -99,17 +103,29 @@ void sum_block_of_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
 
 /* Build sparsity and index map for summing blocks of rows.
  * iwork must have size max(A->n, A->nnz), and idx_map must have size A->nnz. */
-void sum_block_of_rows_csr_fill_sparsity(const CSR_Matrix *A, CSR_Matrix *C,
-                                         int row_block_size, int *iwork,
-                                         int *idx_map);
+void sum_block_of_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A,
+                                                     CSR_Matrix *C,
+                                                     int row_block_size, int *iwork,
+                                                     int *idx_map);
 
 /* Fill values for summing blocks of rows using precomputed idx_map */
-void sum_block_of_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
-                                       const int *idx_map);
+// void sum_block_of_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+//                                        const int *idx_map);
 
 /* Sum evenly spaced rows of A into a matrix C */
 void sum_evenly_spaced_rows_csr(const CSR_Matrix *A, CSR_Matrix *C,
                                 struct int_double_pair *pairs, int row_spacing);
+
+/* Build sparsity and index map for summing evenly spaced rows.
+ * iwork must have size max(A->n, A->nnz), and idx_map must have size A->nnz. */
+void sum_evenly_spaced_rows_csr_fill_sparsity_and_idx_map(const CSR_Matrix *A,
+                                                          CSR_Matrix *C,
+                                                          int row_spacing,
+                                                          int *iwork, int *idx_map);
+
+/* Fill values for summing evenly spaced rows using precomputed idx_map */
+// void sum_evenly_spaced_rows_csr_fill_values(const CSR_Matrix *A, CSR_Matrix *C,
+//                                             const int *idx_map);
 
 /* Sum evenly spaced rows of A starting at offset into a row matrix C */
 void sum_spaced_rows_into_row_csr(const CSR_Matrix *A, CSR_Matrix *C,
