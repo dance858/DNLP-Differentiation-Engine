@@ -15,6 +15,7 @@
 #include "forward_pass/elementwise/test_log.h"
 #include "jacobian_tests/test_composite.h"
 #include "jacobian_tests/test_elementwise_mult.h"
+#include "jacobian_tests/test_neg.h"
 #include "jacobian_tests/test_hstack.h"
 #include "jacobian_tests/test_log.h"
 #include "jacobian_tests/test_promote.h"
@@ -56,8 +57,6 @@ int main(void)
     mu_run_test(test_addition, tests_run);
     mu_run_test(test_linear_op, tests_run);
     mu_run_test(test_neg_forward, tests_run);
-    mu_run_test(test_neg_jacobian, tests_run);
-    mu_run_test(test_neg_chain, tests_run);
     mu_run_test(test_promote_scalar_to_vector, tests_run);
     mu_run_test(test_exp, tests_run);
     mu_run_test(test_log, tests_run);
@@ -69,6 +68,8 @@ int main(void)
     mu_run_test(test_hstack_forward_matrix, tests_run);
 
     printf("\n--- Jacobian Tests ---\n");
+    mu_run_test(test_neg_jacobian, tests_run);
+    mu_run_test(test_neg_chain, tests_run);
     mu_run_test(test_jacobian_log, tests_run);
     mu_run_test(test_jacobian_log_matrix, tests_run);
     mu_run_test(test_jacobian_composite_log, tests_run);
