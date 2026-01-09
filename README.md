@@ -5,6 +5,10 @@
 7. Must be able to compute jacobian and hessian of A @ phi(x), so linear operator needs other code! This requires new infrastructure, I think.
 8. Shortcut hessians of affine stuff?
 
-Going through all atoms to see that sparsity pattern is computed in jacobian:
-1. sum - not ok
+Going through all atoms to see that sparsity pattern is computed in initialization of jacobian:
 2. trace - not ok
+
+Going through all atoms to see that sparsity pattern is computed in initialization of hessian:
+1. add - not ok
+2. hstack - not ok
+3. trace - not ok

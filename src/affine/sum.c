@@ -71,8 +71,6 @@ static void jacobian_init(expr *node)
 
     /* we never have to store more than the child's nnz */
     node->jacobian = new_csr_matrix(node->d1, node->n_vars, x->jacobian->nnz);
-    snode->int_double_pairs = new_int_double_pair_array(x->jacobian->nnz);
-
     node->iwork = malloc(MAX(node->jacobian->n, x->jacobian->nnz) * sizeof(int));
     snode->idx_map = malloc(x->jacobian->nnz * sizeof(int));
 
@@ -96,15 +94,14 @@ static void jacobian_init(expr *node)
 static void eval_jacobian(expr *node)
 {
     expr *x = node->left;
-    sum_expr *snode = (sum_expr *) node;
-    int axis = snode->axis;
 
     /* evaluate child's jacobian */
     x->eval_jacobian(x);
 
     /* we have precomputed an idx map between the nonzeros of A and the result in C,
        so we just accumulate accordingly */
-    idx_map_accumulator(x->jacobian, snode->idx_map, node->jacobian->x);
+    idx_map_accumulator(x->jacobian, ((sum_expr *) node)->idx_map,
+                        node->jacobian->x);
 }
 
 static void wsum_hess_init(expr *node)
@@ -116,6 +113,10 @@ static void wsum_hess_init(expr *node)
     /* we never have to store more than the child's nnz */
     node->wsum_hess = new_csr_matrix(node->n_vars, node->n_vars, x->wsum_hess->nnz);
     node->dwork = malloc(x->size * sizeof(double));
+
+    /* copy sparsity pattern */
+    memcpy(node->wsum_hess->p, x->wsum_hess->p, (x->n_vars + 1) * sizeof(int));
+    memcpy(node->wsum_hess->i, x->wsum_hess->i, x->wsum_hess->nnz * sizeof(int));
 }
 
 static void eval_wsum_hess(expr *node, const double *w)
@@ -139,8 +140,8 @@ static void eval_wsum_hess(expr *node, const double *w)
 
     x->eval_wsum_hess(x, node->dwork);
 
-    /* todo: is this copy necessary or can we just change pointers? */
-    copy_csr_matrix(x->wsum_hess, node->wsum_hess);
+    /* copy values (TODO: is this necessary or can we just change pointers?)*/
+    memcpy(node->wsum_hess->x, x->wsum_hess->x, x->wsum_hess->nnz * sizeof(double));
 }
 
 static bool is_affine(const expr *node)
@@ -151,7 +152,7 @@ static bool is_affine(const expr *node)
 static void free_type_data(expr *node)
 {
     sum_expr *snode = (sum_expr *) node;
-    free_int_double_pair_array(snode->int_double_pairs);
+    free(snode->idx_map);
 }
 
 expr *new_sum(expr *child, int axis)
@@ -188,7 +189,6 @@ expr *new_sum(expr *child, int axis)
 
     /* Set type-specific fields */
     snode->axis = axis;
-    snode->int_double_pairs = NULL;
 
     return node;
 }
