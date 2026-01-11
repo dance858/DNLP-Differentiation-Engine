@@ -23,6 +23,8 @@ pip install -e ".[test]"
 ## Running Tests
 
 ```bash
+# first go to python folder
+
 # Run all tests
 pytest
 
