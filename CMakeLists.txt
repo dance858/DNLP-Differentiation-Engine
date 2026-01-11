@@ -37,6 +37,9 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 add_library(dnlp_diff ${SOURCES})
 target_link_libraries(dnlp_diff m)
 
+# Enable position-independent code for shared library compatibility
+set_property(TARGET dnlp_diff PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # =============================================================================
 # Python bindings (built when using scikit-build-core)
 # =============================================================================
