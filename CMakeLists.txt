@@ -3,9 +3,13 @@ project(DNLP_Diff_Engine C)
 
 set(CMAKE_C_STANDARD 99)
 
-# Set build type if not specified (standalone builds)
-if(NOT CMAKE_BUILD_TYPE AND NOT SKBUILD)
-    set(CMAKE_BUILD_TYPE Debug)
+#Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+else()
+  message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 endif()
 
 # Warning flags (always enabled)
@@ -22,11 +26,6 @@ add_compile_options(
     -Wnull-dereference     # Warn about null pointer dereference
 )
 
-# Debug flags only for standalone debug builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT SKBUILD)
-    add_compile_options(-g -O0)
-endif()
-
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
@@ -36,6 +35,14 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 # Create core library
 add_library(dnlp_diff ${SOURCES})
 target_link_libraries(dnlp_diff m)
+
+# Config-specific compile options
+target_compile_options(dnlp_diff PRIVATE
+  $<$<CONFIG:Debug>:-g -O0>
+  $<$<CONFIG:Release>:-O3 -DNDEBUG>
+  $<$<CONFIG:RelWithDebInfo>:-O2 -g -DNDEBUG>
+  $<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
+)
 
 # Enable position-independent code for shared library compatibility
 set_property(TARGET dnlp_diff PROPERTY POSITION_INDEPENDENT_CODE ON)

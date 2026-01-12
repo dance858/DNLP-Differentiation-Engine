@@ -95,4 +95,18 @@ typedef struct right_matmul_expr
     CSC_Matrix *CSC_work;
 } right_matmul_expr;
 
+/* Constant scalar multiplication: y = a * child where a is a constant double */
+typedef struct const_scalar_mult_expr
+{
+    expr base;
+    double a;
+} const_scalar_mult_expr;
+
+/* Constant vector elementwise multiplication: y = a \circ child for constant a */
+typedef struct const_vector_mult_expr
+{
+    expr base;
+    double *a; /* length equals node->size */
+} const_vector_mult_expr;
+
 #endif /* SUBEXPR_H */

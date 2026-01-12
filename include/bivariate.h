@@ -16,4 +16,10 @@ expr *new_left_matmul(expr *u, const CSR_Matrix *A);
 /* Right matrix multiplication: f(x) @ A where A is a constant matrix */
 expr *new_right_matmul(expr *u, const CSR_Matrix *A);
 
+/* Constant scalar multiplication: a * f(x) where a is a constant double */
+expr *new_const_scalar_mult(double a, expr *child);
+
+/* Constant vector elementwise multiplication: a ∘ f(x) where a is constant */
+expr *new_const_vector_mult(const double *a, expr *child);
+
 #endif /* BIVARIATE_H */

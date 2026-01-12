@@ -4,28 +4,30 @@
 
 /* Include atom bindings */
 #include "atoms/add.h"
+#include "atoms/asinh.h"
+#include "atoms/atanh.h"
+#include "atoms/const_scalar_mult.h"
+#include "atoms/const_vector_mult.h"
 #include "atoms/constant.h"
+#include "atoms/cos.h"
+#include "atoms/entr.h"
 #include "atoms/exp.h"
+#include "atoms/left_matmul.h"
 #include "atoms/linear.h"
 #include "atoms/log.h"
+#include "atoms/logistic.h"
 #include "atoms/multiply.h"
 #include "atoms/neg.h"
 #include "atoms/power.h"
 #include "atoms/promote.h"
-#include "atoms/sin.h"
-#include "atoms/cos.h"
-#include "atoms/tan.h"
-#include "atoms/sinh.h"
-#include "atoms/tanh.h"
-#include "atoms/asinh.h"
-#include "atoms/atanh.h"
-#include "atoms/entr.h"
-#include "atoms/logistic.h"
-#include "atoms/xexp.h"
-#include "atoms/left_matmul.h"
 #include "atoms/right_matmul.h"
+#include "atoms/sin.h"
+#include "atoms/sinh.h"
 #include "atoms/sum.h"
+#include "atoms/tan.h"
+#include "atoms/tanh.h"
 #include "atoms/variable.h"
+#include "atoms/xexp.h"
 
 /* Include problem bindings */
 #include "problem/constraint_forward.h"
@@ -56,7 +58,12 @@ static PyMethodDef DNLPMethods[] = {
     {"make_sum", py_make_sum, METH_VARARGS, "Create sum node"},
     {"make_neg", py_make_neg, METH_VARARGS, "Create neg node"},
     {"make_promote", py_make_promote, METH_VARARGS, "Create promote node"},
-    {"make_multiply", py_make_multiply, METH_VARARGS, "Create elementwise multiply node"},
+    {"make_multiply", py_make_multiply, METH_VARARGS,
+     "Create elementwise multiply node"},
+    {"make_const_scalar_mult", py_make_const_scalar_mult, METH_VARARGS,
+     "Create constant scalar multiplication node (a * f(x))"},
+    {"make_const_vector_mult", py_make_const_vector_mult, METH_VARARGS,
+     "Create constant vector multiplication node (a ∘ f(x))"},
     {"make_power", py_make_power, METH_VARARGS, "Create power node"},
     {"make_sin", py_make_sin, METH_VARARGS, "Create sin node"},
     {"make_cos", py_make_cos, METH_VARARGS, "Create cos node"},
@@ -68,8 +75,10 @@ static PyMethodDef DNLPMethods[] = {
     {"make_entr", py_make_entr, METH_VARARGS, "Create entr node"},
     {"make_logistic", py_make_logistic, METH_VARARGS, "Create logistic node"},
     {"make_xexp", py_make_xexp, METH_VARARGS, "Create xexp node"},
-    {"make_left_matmul", py_make_left_matmul, METH_VARARGS, "Create left matmul node (A @ f(x))"},
-    {"make_right_matmul", py_make_right_matmul, METH_VARARGS, "Create right matmul node (f(x) @ A)"},
+    {"make_left_matmul", py_make_left_matmul, METH_VARARGS,
+     "Create left matmul node (A @ f(x))"},
+    {"make_right_matmul", py_make_right_matmul, METH_VARARGS,
+     "Create right matmul node (f(x) @ A)"},
     {"make_problem", py_make_problem, METH_VARARGS,
      "Create problem from objective and constraints"},
     {"problem_init_derivatives", py_problem_init_derivatives, METH_VARARGS,
@@ -86,8 +95,8 @@ static PyMethodDef DNLPMethods[] = {
      "Compute Lagrangian Hessian"},
     {NULL, NULL, 0, NULL}};
 
-static struct PyModuleDef dnlp_module = {PyModuleDef_HEAD_INIT, "dnlp_diff_engine._core",
-                                         NULL, -1, DNLPMethods};
+static struct PyModuleDef dnlp_module = {
+    PyModuleDef_HEAD_INIT, "dnlp_diff_engine._core", NULL, -1, DNLPMethods};
 
 PyMODINIT_FUNC PyInit__core(void)
 {

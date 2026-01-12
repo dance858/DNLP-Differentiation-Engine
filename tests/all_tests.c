@@ -14,6 +14,8 @@
 #include "forward_pass/elementwise/test_exp.h"
 #include "forward_pass/elementwise/test_log.h"
 #include "jacobian_tests/test_composite.h"
+#include "jacobian_tests/test_const_scalar_mult.h"
+#include "jacobian_tests/test_const_vector_mult.h"
 #include "jacobian_tests/test_elementwise_mult.h"
 #include "jacobian_tests/test_hstack.h"
 #include "jacobian_tests/test_left_matmul.h"
@@ -38,6 +40,8 @@
 #include "wsum_hess/elementwise/test_power.h"
 #include "wsum_hess/elementwise/test_trig.h"
 #include "wsum_hess/elementwise/test_xexp.h"
+#include "wsum_hess/test_const_scalar_mult.h"
+#include "wsum_hess/test_const_vector_mult.h"
 #include "wsum_hess/test_hstack.h"
 #include "wsum_hess/test_left_matmul.h"
 #include "wsum_hess/test_multiply.h"
@@ -78,6 +82,10 @@ int main(void)
     mu_run_test(test_jacobian_log_matrix, tests_run);
     mu_run_test(test_jacobian_composite_log, tests_run);
     mu_run_test(test_jacobian_composite_log_add, tests_run);
+    mu_run_test(test_jacobian_const_scalar_mult_log_vector, tests_run);
+    mu_run_test(test_jacobian_const_scalar_mult_log_matrix, tests_run);
+    mu_run_test(test_jacobian_const_vector_mult_log_vector, tests_run);
+    mu_run_test(test_jacobian_const_vector_mult_log_matrix, tests_run);
     mu_run_test(test_jacobian_rel_entr_vector_args_1, tests_run);
     mu_run_test(test_jacobian_rel_entr_vector_args_2, tests_run);
     mu_run_test(test_jacobian_rel_entr_matrix_args, tests_run);
@@ -145,6 +153,10 @@ int main(void)
     mu_run_test(test_wsum_hess_quad_over_lin_xy, tests_run);
     mu_run_test(test_wsum_hess_quad_over_lin_yx, tests_run);
     mu_run_test(test_wsum_hess_quad_form, tests_run);
+    mu_run_test(test_wsum_hess_const_scalar_mult_log_vector, tests_run);
+    mu_run_test(test_wsum_hess_const_scalar_mult_log_matrix, tests_run);
+    mu_run_test(test_wsum_hess_const_vector_mult_log_vector, tests_run);
+    mu_run_test(test_wsum_hess_const_vector_mult_log_matrix, tests_run);
     mu_run_test(test_wsum_hess_multiply_linear_ops, tests_run);
     mu_run_test(test_wsum_hess_multiply_sparse_random, tests_run);
     mu_run_test(test_wsum_hess_multiply_1, tests_run);
