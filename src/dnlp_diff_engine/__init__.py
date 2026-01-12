@@ -100,6 +100,27 @@ def _convert_multiply(expr, children):
     return _diffengine.make_multiply(children[0], children[1])
 
 
+def _extract_flat_indices_from_index(expr):
+    """Extract flattened indices from CVXPY index expression."""
+    parent_shape = expr.args[0].shape
+    indices_per_dim = [np.arange(s.start, s.stop, s.step) for s in expr.key]
+
+    if len(indices_per_dim) == 1:
+        return indices_per_dim[0].astype(np.int32)
+    elif len(indices_per_dim) == 2:
+        # Fortran order: idx = row + col * n_rows
+        return np.add.outer(
+            indices_per_dim[0], indices_per_dim[1] * parent_shape[0]
+        ).flatten(order="F").astype(np.int32)
+    else:
+        raise NotImplementedError("index with >2 dimensions not supported")
+
+
+def _extract_flat_indices_from_special_index(expr):
+    """Extract flattened indices from CVXPY special_index expression."""
+    return np.reshape(expr._select_mat, expr._select_mat.size, order="F").astype(np.int32)
+
+
 def _convert_quad_form(expr, children):
     """Convert quadratic form x.T @ P @ x."""
 
@@ -162,6 +183,13 @@ ATOM_CONVERTERS = {
     "entr": lambda _expr, children: _diffengine.make_entr(children[0]),
     "logistic": lambda _expr, children: _diffengine.make_logistic(children[0]),
     "xexp": lambda _expr, children: _diffengine.make_xexp(children[0]),
+    # Indexing/slicing
+    "index": lambda expr, children: _diffengine.make_index(
+        children[0], _extract_flat_indices_from_index(expr)
+    ),
+    "special_index": lambda expr, children: _diffengine.make_index(
+        children[0], _extract_flat_indices_from_special_index(expr)
+    ),
 }
 
 

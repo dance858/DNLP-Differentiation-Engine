@@ -109,4 +109,17 @@ typedef struct const_vector_mult_expr
     double *a; /* length equals node->size */
 } const_vector_mult_expr;
 
+/* Index/slicing: y = child[indices] where indices is a list of flattened positions */
+typedef struct index_expr
+{
+    expr base;
+    int *indices;        /* Flattened indices to select (owned, copied) */
+    int n_selected;      /* Number of selected elements */
+    /* Pre-computed for fast jacobian eval: */
+    int *jac_row_starts;  /* Position in jacobian->x where each selected row starts */
+    int *jac_row_lengths; /* Number of nonzeros in each selected row */
+    /* Pre-allocated for wsum_hess: */
+    double *parent_w;    /* Scatter buffer (size = child->size), zeroed each eval */
+} index_expr;
+
 #endif /* SUBEXPR_H */

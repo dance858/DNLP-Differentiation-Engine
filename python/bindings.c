@@ -12,6 +12,7 @@
 #include "atoms/cos.h"
 #include "atoms/entr.h"
 #include "atoms/exp.h"
+#include "atoms/index.h"
 #include "atoms/left_matmul.h"
 #include "atoms/linear.h"
 #include "atoms/log.h"
@@ -55,6 +56,7 @@ static PyMethodDef DNLPMethods[] = {
     {"make_linear", py_make_linear, METH_VARARGS, "Create linear op node"},
     {"make_log", py_make_log, METH_VARARGS, "Create log node"},
     {"make_exp", py_make_exp, METH_VARARGS, "Create exp node"},
+    {"make_index", py_make_index, METH_VARARGS, "Create index node"},
     {"make_add", py_make_add, METH_VARARGS, "Create add node"},
     {"make_sum", py_make_sum, METH_VARARGS, "Create sum node"},
     {"make_neg", py_make_neg, METH_VARARGS, "Create neg node"},
