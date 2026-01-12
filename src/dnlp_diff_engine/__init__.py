@@ -63,13 +63,74 @@ def _convert_matmul(expr, children):
         raise NotImplementedError("MulExpression with two non-constant args not supported")
 
 
+def _convert_multiply(expr, children):
+    """Convert multiplication based on argument types."""
+    # multiply has args: [left, right]
+    left_arg, right_arg = expr.args
+
+    # Check if left is a constant
+    if isinstance(left_arg, cp.Constant):
+        value = np.asarray(left_arg.value, dtype=np.float64)
+
+        # Scalar constant
+        if value.size == 1:
+            scalar = float(value.flat[0])
+            return _diffengine.make_const_scalar_mult(children[1], scalar)
+
+        # Vector constant
+        if value.ndim == 1 or (value.ndim == 2 and min(value.shape) == 1):
+            vector = value.flatten()
+            return _diffengine.make_const_vector_mult(children[1], vector)
+
+    # Check if right is a constant
+    elif isinstance(right_arg, cp.Constant):
+        value = np.asarray(right_arg.value, dtype=np.float64)
+
+        # Scalar constant
+        if value.size == 1:
+            scalar = float(value.flat[0])
+            return _diffengine.make_const_scalar_mult(children[0], scalar)
+
+        # Vector constant
+        if value.ndim == 1 or (value.ndim == 2 and min(value.shape) == 1):
+            vector = value.flatten()
+            return _diffengine.make_const_vector_mult(children[0], vector)
+
+    # Neither is constant, use general multiply
+    return _diffengine.make_multiply(children[0], children[1])
+
+
+def _convert_quad_form(expr, children):
+    """Convert quadratic form x.T @ P @ x."""
+
+    P_arg = expr.args[1]
+
+    if not isinstance(P_arg, cp.Constant):
+        raise NotImplementedError("quad_form requires P to be a constant matrix")
+
+    P = np.asarray(P_arg.value, dtype=np.float64)
+    if P.ndim == 1:
+        P = P.reshape(-1, 1)
+
+    P_csr = sparse.csr_matrix(P)
+    m, n = P_csr.shape
+
+    return _diffengine.make_quad_form(
+        children[0],  # x expression
+        P_csr.data.astype(np.float64),
+        P_csr.indices.astype(np.int32),
+        P_csr.indptr.astype(np.int32),
+        m,
+        n,
+    )
+
+
 # Mapping from CVXPY atom names to C diff engine functions
 # Converters receive (expr, children) where expr is the CVXPY expression
 ATOM_CONVERTERS = {
     # Elementwise unary
     "log": lambda _expr, children: _diffengine.make_log(children[0]),
     "exp": lambda _expr, children: _diffengine.make_exp(children[0]),
-
     # Affine unary
     "NegExpression": lambda _expr, children: _diffengine.make_neg(children[0]),
     "Promote": lambda expr, children: _diffengine.make_promote(
@@ -77,33 +138,26 @@ ATOM_CONVERTERS = {
         expr.shape[0] if len(expr.shape) >= 1 else 1,
         expr.shape[1] if len(expr.shape) >= 2 else 1,
     ),
-
     # N-ary (handles 2+ args)
     "AddExpression": lambda _expr, children: _chain_add(children),
-
     # Reductions
     "Sum": lambda _expr, children: _diffengine.make_sum(children[0], -1),
-
     # Bivariate
-    "multiply": lambda _expr, children: _diffengine.make_multiply(children[0], children[1]),
-
+    "multiply": _convert_multiply,
+    "QuadForm": _convert_quad_form,
     # Matrix multiplication
     "MulExpression": _convert_matmul,
-
     # Elementwise univariate with parameter
     "power": lambda expr, children: _diffengine.make_power(children[0], float(expr.p.value)),
-
     # Trigonometric
     "sin": lambda _expr, children: _diffengine.make_sin(children[0]),
     "cos": lambda _expr, children: _diffengine.make_cos(children[0]),
     "tan": lambda _expr, children: _diffengine.make_tan(children[0]),
-
     # Hyperbolic
     "sinh": lambda _expr, children: _diffengine.make_sinh(children[0]),
     "tanh": lambda _expr, children: _diffengine.make_tanh(children[0]),
     "asinh": lambda _expr, children: _diffengine.make_asinh(children[0]),
     "atanh": lambda _expr, children: _diffengine.make_atanh(children[0]),
-
     # Other elementwise
     "entr": lambda _expr, children: _diffengine.make_entr(children[0]),
     "logistic": lambda _expr, children: _diffengine.make_logistic(children[0]),
@@ -207,9 +261,7 @@ class C_problem:
     def __init__(self, cvxpy_problem: cp.Problem):
         var_dict, n_vars = build_variable_dict(cvxpy_problem.variables())
         c_obj = _convert_expr(cvxpy_problem.objective.expr, var_dict, n_vars)
-        c_constraints = [
-            _convert_expr(c.expr, var_dict, n_vars) for c in cvxpy_problem.constraints
-        ]
+        c_constraints = [_convert_expr(c.expr, var_dict, n_vars) for c in cvxpy_problem.constraints]
         self._capsule = _diffengine.make_problem(c_obj, c_constraints)
         self._allocated = False
 

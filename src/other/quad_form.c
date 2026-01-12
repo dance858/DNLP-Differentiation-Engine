@@ -3,6 +3,7 @@
 #include "utils/CSC_Matrix.h"
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,6 +27,7 @@ static void forward(expr *node, const double *u)
 
 static void jacobian_init(expr *node)
 {
+    CSR_Matrix *Q = ((quad_form_expr *) node)->Q;
     assert(node->left->var_id != NOT_A_VARIABLE);
     assert(node->left->d2 == 1);
     expr *x = node->left;
@@ -56,14 +58,15 @@ static void eval_jacobian(expr *node)
 
 static void wsum_hess_init(expr *node)
 {
-    expr *x = node->left;
     CSR_Matrix *Q = ((quad_form_expr *) node)->Q;
+    expr *x = node->left;
     CSR_Matrix *H = new_csr_matrix(node->n_vars, node->n_vars, Q->nnz);
 
     /* set global row pointers */
     memcpy(H->p + x->var_id, Q->p, (x->d1 + 1) * sizeof(int));
     for (int i = x->var_id + x->d1 + 1; i <= node->n_vars; i++)
     {
+
         H->p[i] = Q->nnz;
     }
 
@@ -183,7 +186,9 @@ expr *new_quad_form(expr *left, CSR_Matrix *Q)
     expr_retain(left);
 
     /* Set type-specific field */
-    qnode->Q = Q;
+    qnode->Q = new_csr_matrix(Q->m, Q->n, Q->nnz);
+    copy_csr_matrix(Q, qnode->Q);
+
     node->wsum_hess_init = wsum_hess_init;
     node->eval_wsum_hess = eval_wsum_hess;
     return node;

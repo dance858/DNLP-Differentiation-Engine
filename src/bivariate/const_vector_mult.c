@@ -1,5 +1,6 @@
 #include "bivariate.h"
 #include "subexpr.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,6 +23,7 @@ static void forward(expr *node, const double *u)
 
 static void jacobian_init(expr *node)
 {
+    printf("jacobian_init const_vector_mult\n \n \n");
     expr *x = node->left;
 
     /* initialize child jacobian */

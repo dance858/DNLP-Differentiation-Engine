@@ -1,4 +1,5 @@
 #include "problem.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -259,7 +260,9 @@ void problem_jacobian(problem *prob)
     int row_offset = 0;
     int nnz_offset = 0;
 
-    /* TODO: here we eventually want to evaluate affine jacobians only once */
+    /* TODO: here we eventually want to evaluate affine jacobians only once.
+    And we only need to copy the values. The sparsity pattern should have been set
+    before. */
     for (int i = 0; i < prob->n_constraints; i++)
     {
         expr *c = prob->constraints[i];
