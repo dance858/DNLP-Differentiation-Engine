@@ -7,6 +7,24 @@
 
 /* Index/slicing: y = child[indices] where indices is a list of flattened positions */
 
+/* Check if indices array contains duplicates using a bitmap.
+ * Returns true if duplicates exist, false otherwise. */
+static bool check_for_duplicates(const int *indices, int n_selected, int max_idx)
+{
+    bool *seen = (bool *)calloc(max_idx, sizeof(bool));
+    bool has_dup = false;
+    for (int i = 0; i < n_selected && !has_dup; i++)
+    {
+        if (seen[indices[i]])
+        {
+            has_dup = true;
+        }
+        seen[indices[i]] = true;
+    }
+    free(seen);
+    return has_dup;
+}
+
 static void forward(expr *node, const double *u)
 {
     expr *child = node->left;
@@ -27,41 +45,29 @@ static void jacobian_init(expr *node)
     expr *child = node->left;
     index_expr *idx = (index_expr *)node;
 
-    /* initialize child's jacobian */
     child->jacobian_init(child);
     CSR_Matrix *J_child = child->jacobian;
 
-    /* allocate mapping arrays */
-    idx->jac_row_starts = (int *)malloc(idx->n_selected * sizeof(int));
-    idx->jac_row_lengths = (int *)malloc(idx->n_selected * sizeof(int));
-
-    /* count nnz and pre-compute row mapping */
+    /* count nnz */
     int nnz = 0;
     for (int i = 0; i < idx->n_selected; i++)
     {
         int row = idx->indices[i];
-        int row_len = J_child->p[row + 1] - J_child->p[row];
-        idx->jac_row_starts[i] = nnz;
-        idx->jac_row_lengths[i] = row_len;
-        nnz += row_len;
+        nnz += J_child->p[row + 1] - J_child->p[row];
     }
 
-    /* allocate jacobian with computed sparsity */
     node->jacobian = new_csr_matrix(idx->n_selected, node->n_vars, nnz);
+    CSR_Matrix *J = node->jacobian;
 
-    /* fill sparsity pattern (p and i arrays) */
-    node->jacobian->p[0] = 0;
+    /* fill p and i arrays in one pass */
+    J->p[0] = 0;
     for (int i = 0; i < idx->n_selected; i++)
     {
         int row = idx->indices[i];
-        int row_len = idx->jac_row_lengths[i];
-        /* copy column indices from child row */
-        if (row_len > 0)
-        {
-            memcpy(&node->jacobian->i[idx->jac_row_starts[i]],
-                   &J_child->i[J_child->p[row]], row_len * sizeof(int));
-        }
-        node->jacobian->p[i + 1] = idx->jac_row_starts[i] + row_len;
+        int src = J_child->p[row];
+        int len = J_child->p[row + 1] - src;
+        memcpy(J->i + J->p[i], J_child->i + src, len * sizeof(int));
+        J->p[i + 1] = J->p[i] + len;
     }
 }
 
@@ -69,22 +75,17 @@ static void eval_jacobian(expr *node)
 {
     expr *child = node->left;
     index_expr *idx = (index_expr *)node;
-    CSR_Matrix *J_child = child->jacobian;
 
-    /* evaluate child's jacobian */
     child->eval_jacobian(child);
 
-    /* fast copy using pre-computed mapping */
+    CSR_Matrix *J = node->jacobian;
+    CSR_Matrix *J_child = child->jacobian;
+
     for (int i = 0; i < idx->n_selected; i++)
     {
         int row = idx->indices[i];
-        int row_len = idx->jac_row_lengths[i];
-        if (row_len > 0)
-        {
-            memcpy(&node->jacobian->x[idx->jac_row_starts[i]],
-                   &J_child->x[J_child->p[row]],
-                   row_len * sizeof(double));
-        }
+        int len = J->p[i + 1] - J->p[i];
+        memcpy(J->x + J->p[i], J_child->x + J_child->p[row], len * sizeof(double));
     }
 }
 
@@ -112,13 +113,22 @@ static void eval_wsum_hess(expr *node, const double *w)
     expr *child = node->left;
     index_expr *idx = (index_expr *)node;
 
-    /* zero the scatter buffer */
-    memset(idx->parent_w, 0, child->size * sizeof(double));
-
-    /* scatter w to child size with accumulation (handles repeated indices) */
-    for (int i = 0; i < idx->n_selected; i++)
+    if (idx->has_duplicates)
     {
-        idx->parent_w[idx->indices[i]] += w[i];
+        /* slow path: must zero and accumulate for repeated indices */
+        memset(idx->parent_w, 0, child->size * sizeof(double));
+        for (int i = 0; i < idx->n_selected; i++)
+        {
+            idx->parent_w[idx->indices[i]] += w[i];
+        }
+    }
+    else
+    {
+        /* fast path: direct write (no memset needed, no accumulation) */
+        for (int i = 0; i < idx->n_selected; i++)
+        {
+            idx->parent_w[idx->indices[i]] = w[i];
+        }
     }
 
     /* delegate to child */
@@ -140,16 +150,6 @@ static void free_type_data(expr *node)
     {
         free(idx->indices);
         idx->indices = NULL;
-    }
-    if (idx->jac_row_starts)
-    {
-        free(idx->jac_row_starts);
-        idx->jac_row_starts = NULL;
-    }
-    if (idx->jac_row_lengths)
-    {
-        free(idx->jac_row_lengths);
-        idx->jac_row_lengths = NULL;
     }
     if (idx->parent_w)
     {
@@ -178,9 +178,10 @@ expr *new_index(expr *child, const int *indices, int n_selected)
     memcpy(idx->indices, indices, n_selected * sizeof(int));
     idx->n_selected = n_selected;
 
-    /* mapping arrays allocated lazily in jacobian_init */
-    idx->jac_row_starts = NULL;
-    idx->jac_row_lengths = NULL;
+    /* detect duplicates for Hessian optimization */
+    idx->has_duplicates = check_for_duplicates(indices, n_selected, child->size);
+
+    /* parent_w allocated lazily in wsum_hess_init */
     idx->parent_w = NULL;
 
     return node;

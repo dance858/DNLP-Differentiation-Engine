@@ -115,11 +115,8 @@ typedef struct index_expr
     expr base;
     int *indices;        /* Flattened indices to select (owned, copied) */
     int n_selected;      /* Number of selected elements */
-    /* Pre-computed for fast jacobian eval: */
-    int *jac_row_starts;  /* Position in jacobian->x where each selected row starts */
-    int *jac_row_lengths; /* Number of nonzeros in each selected row */
-    /* Pre-allocated for wsum_hess: */
-    double *parent_w;    /* Scatter buffer (size = child->size), zeroed each eval */
+    bool has_duplicates; /* True if indices contain duplicates (affects Hessian path) */
+    double *parent_w;    /* Scatter buffer for wsum_hess (size = child->size) */
 } index_expr;
 
 #endif /* SUBEXPR_H */
