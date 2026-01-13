@@ -23,6 +23,7 @@
 #include "atoms/promote.h"
 #include "atoms/quad_form.h"
 #include "atoms/quad_over_lin.h"
+#include "atoms/rel_entr.h"
 #include "atoms/right_matmul.h"
 #include "atoms/sin.h"
 #include "atoms/sinh.h"
@@ -87,6 +88,8 @@ static PyMethodDef DNLPMethods[] = {
      "Create quadratic form node (x' * Q * x)"},
     {"make_quad_over_lin", py_make_quad_over_lin, METH_VARARGS,
      "Create quad_over_lin node (sum(x^2) / y)"},
+    {"make_rel_entr", py_make_rel_entr, METH_VARARGS,
+     "Create rel_entr node: x * log(x/y) elementwise"},
     {"make_problem", py_make_problem, METH_VARARGS,
      "Create problem from objective and constraints"},
     {"problem_init_derivatives", py_problem_init_derivatives, METH_VARARGS,

@@ -139,6 +139,11 @@ def _convert_reshape(expr, children):
     return children[0]
 
 
+def _convert_rel_entr(_expr, children):
+    """Convert rel_entr(x, y) = x * log(x/y) elementwise."""
+    return _diffengine.make_rel_entr(children[0], children[1])
+
+
 def _convert_quad_form(expr, children):
     """Convert quadratic form x.T @ P @ x."""
 
@@ -187,6 +192,7 @@ ATOM_CONVERTERS = {
     "quad_over_lin": lambda _expr, children: _diffengine.make_quad_over_lin(
         children[0], children[1]
     ),
+    "rel_entr": _convert_rel_entr,
     # Matrix multiplication
     "MulExpression": _convert_matmul,
     # Elementwise univariate with parameter
