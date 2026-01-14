@@ -38,6 +38,7 @@
 #include "problem/gradient.h"
 #include "problem/hessian.h"
 #include "problem/init_derivatives.h"
+#include "problem/init_jacobian_only.h"
 #include "problem/jacobian.h"
 #include "problem/make_problem.h"
 #include "problem/objective_forward.h"
@@ -94,6 +95,8 @@ static PyMethodDef DNLPMethods[] = {
      "Create problem from objective and constraints"},
     {"problem_init_derivatives", py_problem_init_derivatives, METH_VARARGS,
      "Initialize derivative structures"},
+    {"problem_init_jacobian_only", py_problem_init_jacobian_only, METH_VARARGS,
+     "Initialize Jacobian structure only (skip Hessian)"},
     {"problem_objective_forward", py_problem_objective_forward, METH_VARARGS,
      "Evaluate objective only"},
     {"problem_constraint_forward", py_problem_constraint_forward, METH_VARARGS,

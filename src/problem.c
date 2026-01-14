@@ -104,6 +104,27 @@ void problem_init_derivatives(problem *prob)
     free(iwork);
 }
 
+void problem_init_jacobian_only(problem *prob)
+{
+    // -------------------------------------------------------------------------------
+    //                           Jacobian structure only (skip Hessian)
+    // -------------------------------------------------------------------------------
+    prob->objective->jacobian_init(prob->objective);
+    int nnz = 0;
+    for (int i = 0; i < prob->n_constraints; i++)
+    {
+        expr *c = prob->constraints[i];
+        c->jacobian_init(c);
+        nnz += c->jacobian->nnz;
+    }
+
+    prob->jacobian = new_csr_matrix(prob->total_constraint_size, prob->n_vars, nnz);
+
+    /* Leave Hessian structures as NULL */
+    prob->lagrange_hessian = NULL;
+    prob->hess_idx_map = NULL;
+}
+
 static void problem_lagrange_hess_fill_sparsity(problem *prob, int *iwork)
 {
     expr **constrs = prob->constraints;

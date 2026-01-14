@@ -54,11 +54,38 @@ static void jacobian_init(expr *node)
     expr *x = node->left;
     right_matmul_expr *right_node = (right_matmul_expr *) node;
 
-    /* initialize child's jacobian and precompute sparsity of its transpose */
+    /* initialize child's jacobian */
     x->jacobian_init(x);
-    right_node->CSC_work = csr_to_csc_fill_sparsity(x->jacobian, node->iwork);
 
-    /* precompute sparsity of this node's jacobian */
+    /* Fast path: child is a variable with identity Jacobian.
+     * For y = x @ A, we compute vec(y) = B @ vec(x) where B = A^T kron I_p.
+     * J_y = B @ J_x where J_x is identity shifted by var_id.
+     * So J_y is just B with column indices shifted by var_id.
+     * This avoids O(nnz(B) * n) CSR-CSC multiplication. */
+    if (x->var_id != NOT_A_VARIABLE)
+    {
+        CSR_Matrix *B = right_node->B;
+        node->jacobian = new_csr_matrix(B->m, node->n_vars, B->nnz);
+
+        /* Copy row pointers directly */
+        memcpy(node->jacobian->p, B->p, (B->m + 1) * sizeof(int));
+
+        /* Copy column indices with offset by var_id */
+        for (int k = 0; k < B->nnz; k++)
+        {
+            node->jacobian->i[k] = B->i[k] + x->var_id;
+        }
+
+        /* Copy values directly (B is constant, variable Jacobian entries are 1.0) */
+        memcpy(node->jacobian->x, B->x, B->nnz * sizeof(double));
+
+        /* Signal fast path by leaving CSC_work as NULL */
+        right_node->CSC_work = NULL;
+        return;
+    }
+
+    /* Slow path: general case - compute B @ J_x via matrix multiplication */
+    right_node->CSC_work = csr_to_csc_fill_sparsity(x->jacobian, node->iwork);
     node->jacobian = csr_csc_matmul_alloc(right_node->B, right_node->CSC_work);
 }
 
@@ -67,11 +94,18 @@ static void eval_jacobian(expr *node)
     expr *x = node->left;
     right_matmul_expr *right_node = (right_matmul_expr *) node;
 
-    /* evaluate child's jacobian and convert to CSC*/
+    /* evaluate child's jacobian */
     x->eval_jacobian(x);
-    csr_to_csc_fill_values(x->jacobian, right_node->CSC_work, node->iwork);
 
-    /* compute this node's jacobian */
+    /* Fast path: child is a variable.
+     * Values already set in jacobian_init (B is constant, variable Jacobian is 1.0) */
+    if (right_node->CSC_work == NULL)
+    {
+        return;
+    }
+
+    /* Slow path: convert to CSC and multiply */
+    csr_to_csc_fill_values(x->jacobian, right_node->CSC_work, node->iwork);
     csr_csc_matmul_fill_values(right_node->B, right_node->CSC_work, node->jacobian);
 }
 

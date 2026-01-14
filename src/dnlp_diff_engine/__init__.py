@@ -68,8 +68,8 @@ def _convert_multiply(expr, children):
     # multiply has args: [left, right]
     left_arg, right_arg = expr.args
 
-    # Check if left is a constant
-    if isinstance(left_arg, cp.Constant):
+    # Check if left is a constant (use is_constant() to handle Promote and other wrappers)
+    if left_arg.is_constant():
         value = np.asarray(left_arg.value, dtype=np.float64)
 
         # Scalar constant
@@ -83,7 +83,7 @@ def _convert_multiply(expr, children):
             return _diffengine.make_const_vector_mult(children[1], vector)
 
     # Check if right is a constant
-    elif isinstance(right_arg, cp.Constant):
+    elif right_arg.is_constant():
         value = np.asarray(right_arg.value, dtype=np.float64)
 
         # Scalar constant
@@ -323,8 +323,13 @@ class C_problem:
         self._allocated = False
 
     def init_derivatives(self):
-        """Initialize derivative structures. Must be called before forward/gradient/jacobian."""
+        """Initialize derivative structures. Must be called before forward/gradient/jacobian/hessian."""
         _diffengine.problem_init_derivatives(self._capsule)
+        self._allocated = True
+
+    def init_jacobian_only(self):
+        """Initialize Jacobian structure only (skip Hessian). Use when only Jacobian is needed."""
+        _diffengine.problem_init_jacobian_only(self._capsule)
         self._allocated = True
 
     def objective_forward(self, u: np.ndarray) -> float:

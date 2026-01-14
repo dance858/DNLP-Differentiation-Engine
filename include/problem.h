@@ -26,6 +26,7 @@ typedef struct problem
 /* Retains objective and constraints (shared ownership with caller) */
 problem *new_problem(expr *objective, expr **constraints, int n_constraints);
 void problem_init_derivatives(problem *prob);
+void problem_init_jacobian_only(problem *prob);  /* Skip Hessian setup */
 void free_problem(problem *prob);
 
 double problem_objective_forward(problem *prob, const double *u);
