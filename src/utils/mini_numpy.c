@@ -12,6 +12,7 @@ void repeat(double *result, const double *a, int len, int repeats)
     }
 }
 
+/* TODO: we can use memcpy here */
 void tile(double *result, const double *a, int len, int tiles)
 {
     int idx = 0;
