@@ -1,5 +1,7 @@
 #include "affine.h"
 #include "subexpr.h"
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -57,6 +59,7 @@ static void jacobian_init(expr *node)
         J->p[i + 1] = J->p[i] + len;
     }
 
+    J->nnz = J->p[idx->n_idxs];
     node->jacobian = J;
 }
 
@@ -142,16 +145,14 @@ static void free_type_data(expr *node)
     }
 }
 
-expr *new_index(expr *child, const int *indices, int n_idxs)
+expr *new_index(expr *child, int d1, int d2, const int *indices, int n_idxs)
 {
+    assert(d1 * d2 == n_idxs);
     /* allocate type-specific struct */
     index_expr *idx = (index_expr *) calloc(1, sizeof(index_expr));
     expr *node = &idx->base;
 
-    /* to be consistent with CVXPY and NumPy we treat the result from
-       indexing as a row vector.
-       TODO: is this correct? What if the index in numpy/cvxpy returns a matrix? */
-    init_expr(node, 1, n_idxs, child->n_vars, forward, jacobian_init, eval_jacobian,
+    init_expr(node, d1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
               is_affine, free_type_data);
 
     node->left = child;
