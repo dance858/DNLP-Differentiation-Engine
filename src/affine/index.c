@@ -148,8 +148,10 @@ expr *new_index(expr *child, const int *indices, int n_idxs)
     index_expr *idx = (index_expr *) calloc(1, sizeof(index_expr));
     expr *node = &idx->base;
 
-    /* output shape is (n_idxs, 1) - flattened */
-    init_expr(node, n_idxs, 1, child->n_vars, forward, jacobian_init, eval_jacobian,
+    /* to be consistent with CVXPY and NumPy we treat the result from
+       indexing as a row vector.
+       TODO: is this correct? What if the index in numpy/cvxpy returns a matrix? */
+    init_expr(node, 1, n_idxs, child->n_vars, forward, jacobian_init, eval_jacobian,
               is_affine, free_type_data);
 
     node->left = child;

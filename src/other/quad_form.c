@@ -179,7 +179,7 @@ static void free_type_data(expr *node)
 
 expr *new_quad_form(expr *left, CSR_Matrix *Q)
 {
-    assert(left->d2 == 1);
+    assert(left->d1 == 1 || left->d2 == 1); /* left must be a vector */
     quad_form_expr *qnode = (quad_form_expr *) calloc(1, sizeof(quad_form_expr));
     expr *node = &qnode->base;
 

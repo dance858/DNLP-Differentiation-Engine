@@ -100,6 +100,7 @@ static void jacobian_init(expr *node)
                 J->nnz += nnz_in_row;
             }
         }
+        J->p[node->size] = total_nnz;
     }
     else if (bcast->type == BROADCAST_COL)
     {
