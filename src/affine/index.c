@@ -74,9 +74,8 @@ static void eval_jacobian(expr *node)
 
     for (int i = 0; i < idx->n_idxs; i++)
     {
-        int row = idx->indices[i];
         int len = J->p[i + 1] - J->p[i];
-        memcpy(J->x + J->p[i], Jx->x + Jx->p[row], len * sizeof(double));
+        memcpy(J->x + J->p[i], Jx->x + Jx->p[idx->indices[i]], len * sizeof(double));
     }
 }
 

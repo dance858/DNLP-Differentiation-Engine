@@ -119,8 +119,12 @@ static PyMethodDef DNLPMethods[] = {
      "Compute objective gradient"},
     {"problem_jacobian", py_problem_jacobian, METH_VARARGS,
      "Compute constraint jacobian"},
+    {"get_jacobian", py_get_jacobian, METH_VARARGS,
+     "Get constraint jacobian without recomputing"},
     {"problem_hessian", py_problem_hessian, METH_VARARGS,
      "Compute Lagrangian Hessian"},
+    {"get_hessian", py_get_hessian, METH_VARARGS,
+     "Get Lagrangian Hessian without recomputing"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef dnlp_module = {
