@@ -19,7 +19,7 @@ static void forward(expr *node, const double *u)
     csr_matvec(Q, x->value, node->dwork, 0);
     node->value[0] = 0.0;
 
-    for (int i = 0; i < x->d1; i++)
+    for (int i = 0; i < x->size; i++)
     {
         node->value[0] += x->value[i] * node->dwork[i];
     }
@@ -28,14 +28,14 @@ static void forward(expr *node, const double *u)
 static void jacobian_init(expr *node)
 {
     assert(node->left->var_id != NOT_A_VARIABLE);
-    assert(node->left->d2 == 1);
-    expr *x = node->left;
-    node->dwork = (double *) malloc(x->d1 * sizeof(double));
-    node->jacobian = new_csr_matrix(1, node->n_vars, x->d1);
-    node->jacobian->p[0] = 0;
-    node->jacobian->p[1] = x->d1;
 
-    for (int j = 0; j < x->d1; j++)
+    expr *x = node->left;
+    node->dwork = (double *) malloc(x->size * sizeof(double));
+    node->jacobian = new_csr_matrix(1, node->n_vars, x->size);
+    node->jacobian->p[0] = 0;
+    node->jacobian->p[1] = x->size;
+
+    for (int j = 0; j < x->size; j++)
     {
         node->jacobian->i[j] = x->var_id + j;
     }
@@ -49,7 +49,7 @@ static void eval_jacobian(expr *node)
     // jacobian = 2 * Q * x
     csr_matvec(Q, x->value, node->jacobian->x, 0);
 
-    for (int j = 0; j < x->d1; j++)
+    for (int j = 0; j < x->size; j++)
     {
         node->jacobian->x[j] *= 2.0;
     }
@@ -62,8 +62,8 @@ static void wsum_hess_init(expr *node)
     CSR_Matrix *H = new_csr_matrix(node->n_vars, node->n_vars, Q->nnz);
 
     /* set global row pointers */
-    memcpy(H->p + x->var_id, Q->p, (x->d1 + 1) * sizeof(int));
-    for (int i = x->var_id + x->d1 + 1; i <= node->n_vars; i++)
+    memcpy(H->p + x->var_id, Q->p, (x->size + 1) * sizeof(int));
+    for (int i = x->var_id + x->size + 1; i <= node->n_vars; i++)
     {
 
         H->p[i] = Q->nnz;
