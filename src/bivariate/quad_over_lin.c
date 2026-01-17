@@ -292,9 +292,6 @@ static void eval_wsum_hess(expr *node, const double *w)
     }
 }
 
-/* TODO: the above implementations probably assumes that the first argument is a
- vector but cvxpy supports a matrix for the first argument*/
-
 expr *new_quad_over_lin(expr *left, expr *right)
 {
     assert((right->d2 == 1 && right->d2 == 1)); /* right must be scalar*/

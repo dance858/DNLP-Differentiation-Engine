@@ -125,14 +125,12 @@ expr *new_left_matmul(expr *u, const CSR_Matrix *A)
         d1 = A->m;
         d2 = u->d2;
         n_blocks = u->d2;
-        printf("d2: %d\n", d2);
     }
     else if (u->d2 == A->n && u->d1 == 1)
     {
         d1 = 1;
         d2 = A->m;
         n_blocks = 1;
-        printf("d2: %d\n", d2);
     }
     else
     {
@@ -140,7 +138,6 @@ expr *new_left_matmul(expr *u, const CSR_Matrix *A)
         exit(1);
     }
 
-    // assert(u->d1 == A->n);
     /* Allocate the type-specific struct */
     left_matmul_expr *lin_node =
         (left_matmul_expr *) calloc(1, sizeof(left_matmul_expr));
