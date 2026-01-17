@@ -197,9 +197,8 @@ expr *new_elementwise_mult(expr *left, expr *right)
     expr *node = &mul_node->base;
 
     init_expr(node, left->d1, left->d2, left->n_vars, forward, jacobian_init,
-              eval_jacobian, is_affine, free_type_data);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
+              eval_jacobian, is_affine, wsum_hess_init, eval_wsum_hess,
+              free_type_data);
     node->left = left;
     node->right = right;
     expr_retain(left);

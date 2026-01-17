@@ -1,4 +1,5 @@
 #include "utils/mini_numpy.h"
+#include <string.h>
 
 void repeat(double *result, const double *a, int len, int repeats)
 {
@@ -12,28 +13,19 @@ void repeat(double *result, const double *a, int len, int repeats)
     }
 }
 
-/* TODO: we can use memcpy here */
 void tile_double(double *result, const double *a, int len, int tiles)
 {
-    int idx = 0;
     for (int i = 0; i < tiles; i++)
     {
-        for (int j = 0; j < len; j++)
-        {
-            result[idx++] = a[j];
-        }
+        memcpy(result + i * len, a, len * sizeof(double));
     }
 }
 
 void tile_int(int *result, const int *a, int len, int tiles)
 {
-    int idx = 0;
     for (int i = 0; i < tiles; i++)
     {
-        for (int j = 0; j < len; j++)
-        {
-            result[idx++] = a[j];
-        }
+        memcpy(result + i * len, a, len * sizeof(int));
     }
 }
 

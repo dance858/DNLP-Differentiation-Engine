@@ -200,16 +200,13 @@ static bool is_affine(const expr *node)
 expr *new_rel_entr_first_arg_scalar(expr *left, expr *right)
 {
     assert(left->d1 == 1 && left->d2 == 1);
-    expr *node = new_expr(right->d1, right->d2, left->n_vars);
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, right->d1, right->d2, left->n_vars, forward_scalar_vector,
+              jacobian_init_scalar_vector, eval_jacobian_scalar_vector, is_affine,
+              wsum_hess_init_scalar_vector, eval_wsum_hess_scalar_vector, NULL);
     node->left = left;
     node->right = right;
     expr_retain(left);
     expr_retain(right);
-    node->forward = forward_scalar_vector;
-    node->jacobian_init = jacobian_init_scalar_vector;
-    node->eval_jacobian = eval_jacobian_scalar_vector;
-    node->wsum_hess_init = wsum_hess_init_scalar_vector;
-    node->eval_wsum_hess = eval_wsum_hess_scalar_vector;
-    node->is_affine = is_affine;
     return node;
 }

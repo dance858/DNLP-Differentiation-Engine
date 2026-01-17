@@ -46,7 +46,7 @@ expr *new_linear(expr *u, const CSR_Matrix *A)
     linear_op_expr *lin_node = (linear_op_expr *) calloc(1, sizeof(linear_op_expr));
     expr *node = &lin_node->base;
     init_expr(node, A->m, 1, u->n_vars, forward, jacobian_init, NULL, is_affine,
-              free_type_data);
+              NULL, NULL, free_type_data);
     node->left = u;
     expr_retain(u);
 

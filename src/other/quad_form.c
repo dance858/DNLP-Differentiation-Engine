@@ -190,11 +190,9 @@ expr *new_quad_form(expr *left, CSR_Matrix *Q)
     expr *node = &qnode->base;
 
     init_expr(node, 1, 1, left->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = left;
     expr_retain(left);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* Set type-specific field */
     qnode->Q = new_csr_matrix(Q->m, Q->n, Q->nnz);

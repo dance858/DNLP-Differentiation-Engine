@@ -113,11 +113,8 @@ void init_elementwise(expr *node, expr *child)
     /* Initialize base fields */
     init_expr(node, child->d1, child->d2, child->n_vars, NULL,
               jacobian_init_elementwise, eval_jacobian_elementwise,
-              is_affine_elementwise, NULL);
-
-    /* Set wsum_hess functions */
-    node->wsum_hess_init = wsum_hess_init_elementwise;
-    node->eval_wsum_hess = eval_wsum_hess_elementwise;
+              is_affine_elementwise, wsum_hess_init_elementwise,
+              eval_wsum_hess_elementwise, NULL);
 
     /* Set left child */
     node->left = child;

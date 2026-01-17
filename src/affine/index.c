@@ -152,13 +152,10 @@ expr *new_index(expr *child, int d1, int d2, const int *indices, int n_idxs)
     expr *node = &idx->base;
 
     init_expr(node, d1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
 
     node->left = child;
     expr_retain(child);
-
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* copy indices */
     idx->indices = (int *) malloc(n_idxs * sizeof(int));

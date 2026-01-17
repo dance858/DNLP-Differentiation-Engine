@@ -88,9 +88,7 @@ expr *new_const_scalar_mult(double a, expr *child)
     expr *node = &mult_node->base;
 
     init_expr(node, child->d1, child->d2, child->n_vars, forward, jacobian_init,
-              eval_jacobian, is_affine, NULL);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
+              eval_jacobian, is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = child;
     mult_node->a = a;
     expr_retain(child);

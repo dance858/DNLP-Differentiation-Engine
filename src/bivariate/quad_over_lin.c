@@ -301,16 +301,12 @@ static bool is_affine(const expr *node)
 expr *new_quad_over_lin(expr *left, expr *right)
 {
     assert((right->d2 == 1 && right->d2 == 1)); /* right must be scalar*/
-    expr *node = new_expr(1, 1, left->n_vars);
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, 1, 1, left->n_vars, forward, jacobian_init, eval_jacobian,
+              is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = left;
     node->right = right;
     expr_retain(left);
     expr_retain(right);
-    node->forward = forward;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
-    node->is_affine = is_affine;
     return node;
 }

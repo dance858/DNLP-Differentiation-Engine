@@ -119,13 +119,9 @@ expr *new_trace(expr *child)
     trace_expr *tnode = (trace_expr *) calloc(1, sizeof(trace_expr));
     expr *node = &tnode->base;
     init_expr(node, d1, 1, child->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = child;
     expr_retain(child);
-
-    /* Hessian placeholders */
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* Initialize type-specific fields */
     tnode->int_double_pairs = NULL;

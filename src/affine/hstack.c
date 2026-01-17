@@ -154,13 +154,11 @@ expr *new_hstack(expr **args, int n_args, int n_vars)
     hstack_expr *hnode = (hstack_expr *) calloc(1, sizeof(hstack_expr));
     expr *node = &hnode->base;
     init_expr(node, args[0]->d1, d2, n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, wsum_hess_eval, free_type_data);
 
     /* Set type-specific fields */
     hnode->args = args;
     hnode->n_args = n_args;
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = wsum_hess_eval;
 
     for (int i = 0; i < n_args; i++)
     {

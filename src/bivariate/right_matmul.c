@@ -116,11 +116,9 @@ expr *new_right_matmul(expr *u, const CSR_Matrix *A)
     int q = A->n;
 
     init_expr(node, p, q, u->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = u;
     expr_retain(u);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* create B = A^T kron I_p and its transpose */
     node->iwork = (int *) malloc(node->n_vars * sizeof(int));

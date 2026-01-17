@@ -1,6 +1,7 @@
 #include "affine.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Reshape changes the shape of an expression without permuting data.
@@ -55,15 +56,11 @@ static bool is_affine(const expr *node)
 expr *new_reshape(expr *child, int d1, int d2)
 {
     assert(d1 * d2 == child->size);
-    expr *node = new_expr(d1, d2, child->n_vars);
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, d1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
+              is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = child;
     expr_retain(child);
-    node->forward = forward;
-    node->is_affine = is_affine;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     return node;
 }

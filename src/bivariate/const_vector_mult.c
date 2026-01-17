@@ -103,9 +103,8 @@ expr *new_const_vector_mult(const double *a, expr *child)
     expr *node = &vnode->base;
 
     init_expr(node, child->d1, child->d2, child->n_vars, forward, jacobian_init,
-              eval_jacobian, is_affine, free_type_data);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
+              eval_jacobian, is_affine, wsum_hess_init, eval_wsum_hess,
+              free_type_data);
     node->left = child;
     expr_retain(child);
 

@@ -187,9 +187,7 @@ expr *new_prod(expr *child)
     prod_expr *pnode = (prod_expr *) calloc(1, sizeof(prod_expr));
     expr *node = &pnode->base;
     init_expr(node, 1, 1, child->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = child;
     expr_retain(child);
     return node;

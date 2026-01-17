@@ -1,6 +1,7 @@
 #include "affine.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static void forward(expr *node, const double *u)
 {
@@ -75,17 +76,13 @@ static bool is_affine(const expr *node)
 expr *new_add(expr *left, expr *right)
 {
     assert(left->d1 == right->d1 && left->d2 == right->d2);
-    expr *node = new_expr(left->d1, left->d2, left->n_vars);
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, left->d1, left->d2, left->n_vars, forward, jacobian_init,
+              eval_jacobian, is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = left;
     node->right = right;
     expr_retain(left);
     expr_retain(right);
-    node->forward = forward;
-    node->is_affine = is_affine;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     // just for debugging, should be removed
     strcpy(node->name, "add");

@@ -94,14 +94,9 @@ static bool is_affine(const expr *node)
 expr *new_promote(expr *child, int d1, int d2)
 {
     assert(child->size == 1);
-    expr *node = new_expr(d1, d2, child->n_vars);
-    node->forward = forward;
-    node->jacobian_init = jacobian_init;
-    node->eval_jacobian = eval_jacobian;
-    node->is_affine = is_affine;
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
-
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, d1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
+              is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = child;
     expr_retain(child);
 

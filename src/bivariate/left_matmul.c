@@ -143,11 +143,9 @@ expr *new_left_matmul(expr *u, const CSR_Matrix *A)
         (left_matmul_expr *) calloc(1, sizeof(left_matmul_expr));
     expr *node = &lin_node->base;
     init_expr(node, d1, d2, u->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = u;
     expr_retain(u);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* Initialize type-specific fields */
     lin_node->A = block_diag_repeat_csr(A, n_blocks);

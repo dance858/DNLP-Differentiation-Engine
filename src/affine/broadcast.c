@@ -264,11 +264,9 @@ expr *new_broadcast(expr *child, int d1, int d2)
     //                  initialize the rest of the expression
     // --------------------------------------------------------------------------
     init_expr(node, d1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, NULL);
+              is_affine, wsum_hess_init, eval_wsum_hess, NULL);
     node->left = child;
     expr_retain(child);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
     bcast->type = type;
 
     return node;

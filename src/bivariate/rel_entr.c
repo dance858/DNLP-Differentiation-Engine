@@ -177,16 +177,13 @@ static bool is_affine(const expr *node)
 
 expr *new_rel_entr_vector_args(expr *left, expr *right)
 {
-    expr *node = new_expr(left->d1, left->d2, left->n_vars);
+    expr *node = (expr *) calloc(1, sizeof(expr));
+    init_expr(node, left->d1, left->d2, left->n_vars, forward_vector_args,
+              jacobian_init_vectors_args, eval_jacobian_vector_args, is_affine,
+              wsum_hess_init_vector_args, eval_wsum_hess_vector_args, NULL);
     node->left = left;
     node->right = right;
     expr_retain(left);
     expr_retain(right);
-    node->forward = forward_vector_args;
-    node->jacobian_init = jacobian_init_vectors_args;
-    node->eval_jacobian = eval_jacobian_vector_args;
-    node->wsum_hess_init = wsum_hess_init_vector_args;
-    node->eval_wsum_hess = eval_wsum_hess_vector_args;
-    node->is_affine = is_affine;
     return node;
 }

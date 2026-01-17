@@ -182,11 +182,9 @@ expr *new_sum(expr *child, int axis)
     /* to be consistent with CVXPY and NumPy we treat the result from
        sum with an axis argument as a row vector */
     init_expr(node, 1, d2, child->n_vars, forward, jacobian_init, eval_jacobian,
-              is_affine, free_type_data);
+              is_affine, wsum_hess_init, eval_wsum_hess, free_type_data);
     node->left = child;
     expr_retain(child);
-    node->wsum_hess_init = wsum_hess_init;
-    node->eval_wsum_hess = eval_wsum_hess;
 
     /* Set type-specific fields */
     snode->axis = axis;
