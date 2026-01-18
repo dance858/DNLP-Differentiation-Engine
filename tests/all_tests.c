@@ -41,7 +41,6 @@
 #include "jacobian_tests/test_sum.h"
 #include "jacobian_tests/test_trace.h"
 #include "problem/test_problem.h"
-#include "utils/test_blas.h"
 #include "utils/test_csc_matrix.h"
 #include "utils/test_csr_matrix.h"
 #include "wsum_hess/elementwise/test_entr.h"
@@ -258,10 +257,7 @@ int main(void)
     mu_run_test(test_problem_constraint_forward, tests_run);
     mu_run_test(test_problem_hessian, tests_run);
 
-    printf("\n--- BLAS Tests ---\n");
-    mu_run_test(test_matrix_matrix_mult, tests_run);
-
-    printf("\n=== All %d tests passed ===\n", tests_run);
+      printf("\n=== All %d tests passed ===\n", tests_run);
 
     return 0;
 }

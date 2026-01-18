@@ -1,6 +1,5 @@
 #include "bivariate.h"
 #include "subexpr.h"
-#include "utils/blas_wrappers.h"
 #include "utils/mini_numpy.h"
 #include <assert.h>
 #include <stdio.h>
@@ -246,8 +245,7 @@ static void eval_wsum_hess(expr *node, const double *w)
 
     if (x->var_id < y->var_id)
     {
-        /* X variable rows: For X[row, k_idx], couples with Y[k_idx, col] for all col
-         */
+        /* rows corresponding to x */
         for (int k_idx = 0; k_idx < k; k_idx++)
         {
             for (int row = 0; row < m; row++)
@@ -259,8 +257,7 @@ static void eval_wsum_hess(expr *node, const double *w)
             }
         }
 
-        /* Y variable rows: For Y[k_idx, col], couples with X[row, k_idx] for all row
-         */
+        /* rows corresponding to y */
         for (int col = 0; col < n; col++)
         {
             for (int k_idx = 0; k_idx < k; k_idx++)
@@ -272,8 +269,7 @@ static void eval_wsum_hess(expr *node, const double *w)
     }
     else
     {
-        /* Y variable rows come first: For Y[k_idx, col], couples with X[row, k_idx]
-         */
+        /* rows corresponding to y */
         for (int col = 0; col < n; col++)
         {
             for (int k_idx = 0; k_idx < k; k_idx++)
@@ -283,8 +279,7 @@ static void eval_wsum_hess(expr *node, const double *w)
             }
         }
 
-        /* X variable rows: For X[row, k_idx], couples with Y[k_idx, col] for all col
-         */
+        /* rows corresponding to x */
         for (int k_idx = 0; k_idx < k; k_idx++)
         {
             for (int row = 0; row < m; row++)
