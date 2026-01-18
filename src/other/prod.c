@@ -1,6 +1,7 @@
 #include "other.h"
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -62,7 +63,9 @@ static void jacobian_init(expr *node)
     }
     else
     {
-        assert(false && "not implemented");
+        fprintf(stderr,
+                "Error in prod jacobian_init: non-variable child not implemented\n");
+        exit(1);
     }
 }
 
@@ -94,7 +97,9 @@ static void eval_jacobian(expr *node)
     }
     else
     {
-        assert(false && "not implemented");
+        fprintf(stderr,
+                "Error in prod eval_jacobian: non-variable child not implemented\n");
+        exit(1);
     }
 }
 
@@ -133,7 +138,10 @@ static void wsum_hess_init(expr *node)
     }
     else
     {
-        assert(false && "not implemented");
+        fprintf(
+            stderr,
+            "Error in prod wsum_hess_init: non-variable child not implemented\n");
+        exit(1);
     }
 }
 
@@ -164,7 +172,10 @@ static void eval_wsum_hess(expr *node, const double *w)
     }
     else
     {
-        assert(false && "not implemented");
+        fprintf(
+            stderr,
+            "Error in prod eval_wsum_hess: non-variable child not implemented\n");
+        exit(1);
     }
 }
 

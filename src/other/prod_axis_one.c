@@ -84,7 +84,9 @@ static void jacobian_init(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_one jacobian_init: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -125,7 +127,9 @@ static void eval_jacobian(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_one eval_jacobian: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -173,7 +177,9 @@ static void wsum_hess_init(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_one wsum_hess_init: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -350,7 +356,9 @@ static void eval_wsum_hess(expr *node, const double *w)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_one eval_wsum_hess: child must be a variable\n");
+        exit(1);
     }
 }
 

@@ -1,6 +1,7 @@
 #include "other.h"
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -78,7 +79,9 @@ static void jacobian_init(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_zero jacobian_init: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -118,7 +121,9 @@ static void eval_jacobian(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(stderr,
+                "Error in prod_axis_zero eval_jacobian: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -164,7 +169,10 @@ static void wsum_hess_init(expr *node)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(
+            stderr,
+            "Error in prod_axis_zero wsum_hess_init: child must be a variable\n");
+        exit(1);
     }
 }
 
@@ -306,7 +314,10 @@ static void eval_wsum_hess(expr *node, const double *w)
     }
     else
     {
-        assert(false && "child must be a variable");
+        fprintf(
+            stderr,
+            "Error in prod_axis_zero eval_wsum_hess: child must be a variable\n");
+        exit(1);
     }
 }
 
