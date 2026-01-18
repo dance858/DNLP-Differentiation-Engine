@@ -65,6 +65,15 @@ typedef struct prod_axis_zero_expr
     double *prod_nonzero; /* product of non-zero elements per column */
 } prod_axis_zero_expr;
 
+/* Product of entries along axis=1 (rowwise products) */
+typedef struct prod_axis_one_expr
+{
+    expr base;
+    int *num_of_zeros;    /* num of zeros for each row */
+    int *zero_index;      /* stores idx of zero element per row */
+    double *prod_nonzero; /* product of non-zero elements per row */
+} prod_axis_one_expr;
+
 /* Horizontal stack (concatenate) */
 typedef struct hstack_expr
 {
