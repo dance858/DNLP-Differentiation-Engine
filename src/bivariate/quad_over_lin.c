@@ -3,7 +3,9 @@
 #include "utils/CSC_Matrix.h"
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // ------------------------------------------------------------------------------
 // Implementation of quad-over-lin. The second argument will always be a variable
@@ -231,7 +233,9 @@ static void wsum_hess_init(expr *node)
     else
     {
         /* TODO: implement */
-        assert(false && "not implemented");
+        fprintf(stderr, "Error in quad_over_lin wsum_hess_init: non-variable child "
+                        "not implemented\n");
+        exit(1);
     }
 }
 
@@ -288,7 +292,9 @@ static void eval_wsum_hess(expr *node, const double *w)
     else
     {
         /* TODO: implement */
-        assert(false && "not implemented");
+        fprintf(stderr, "Error in quad_over_lin eval_wsum_hess: non-variable child "
+                        "not implemented\n");
+        exit(1);
     }
 }
 
