@@ -12,6 +12,32 @@ else()
   message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 endif()
 
+# =============================================================================
+# BLAS/LAPACK Configuration (REQUIRED)
+# =============================================================================
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+
+message(STATUS "Found BLAS: ${BLAS_LIBRARIES}")
+message(STATUS "Found LAPACK: ${LAPACK_LIBRARIES}")
+
+set(BLAS_LIBRARIES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+add_compile_definitions(USE_BLAS)
+
+# Optional BLAS configuration flags
+option(BLAS_64 "Use 64-bit integers for BLAS" OFF)
+option(NO_BLAS_SUFFIX "BLAS functions have no suffix" OFF)
+
+if(BLAS_64)
+  add_compile_definitions(BLAS_64)
+  message(STATUS "Using 64-bit BLAS integers")
+endif()
+
+if(NO_BLAS_SUFFIX)
+  add_compile_definitions(NO_BLAS_SUFFIX)
+  message(STATUS "Using BLAS with no function suffix")
+endif()
+
 # Warning flags (always enabled)
 add_compile_options(
     -Wall                  # Enable most warnings
@@ -34,7 +60,7 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 
 # Create core library
 add_library(dnlp_diff ${SOURCES})
-target_link_libraries(dnlp_diff m)
+target_link_libraries(dnlp_diff m ${BLAS_LIBRARIES})
 
 # Config-specific compile options
 target_compile_options(dnlp_diff PRIVATE
