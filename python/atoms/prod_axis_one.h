@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #ifndef ATOM_PROD_AXIS_ONE_H
 #define ATOM_PROD_AXIS_ONE_H
 

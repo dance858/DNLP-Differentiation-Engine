@@ -13,7 +13,7 @@ static void forward(expr *node, const double *u)
     expr *x = node->left;
     x->forward(x, u);
 
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
     int d1 = x->d1;
     int d2 = x->d2;
 
@@ -91,7 +91,7 @@ static void jacobian_init(expr *node)
 static void eval_jacobian(expr *node)
 {
     expr *x = node->left;
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
 
     double *J_vals = node->jacobian->x;
 
@@ -136,30 +136,32 @@ static void wsum_hess_init(expr *node)
     /* if x is a variable */
     if (x->var_id != NOT_A_VARIABLE)
     {
-        /* Hessian structure: for each row i of the input matrix,
-         * the Hessian of the product (w[i] * prod(row i)) has entries
-         * at the column indices corresponding to the columns in that row.
-         * Each row i has d2 non-zero columns, and we have d2 x d2 interactions.
-         * Total nnz = d1 * d2 * d2
-         */
-        int nnz = x->d1 * x->d2 * x->d2;
+        /* each row i has d2-1 non-zero entries, with column indices corresponding to
+           the columns in that row (except the diagonal element). */
+        int nnz = x->d1 * x->d2 * (x->d2 - 1);
         node->wsum_hess = new_csr_matrix(node->n_vars, node->n_vars, nnz);
         CSR_Matrix *H = node->wsum_hess;
 
-        /* Fill row pointers and column indices */
-        int nnz_per_row = x->d2;
+        /* fill sparsity pattern */
+        int nnz_per_row = x->d2 - 1;
         for (int i = 0; i < x->size; i++)
         {
-            int matrix_row = i % x->d1;
-            H->p[x->var_id + i] = i * nnz_per_row;
+            int row = i % x->d1;
+            int col = i / x->d1;
+            int start = i * nnz_per_row;
+            H->p[x->var_id + i] = start;
 
-            /* For this variable (at matrix position [matrix_row, ...]),
-             * the Hessian has entries with all columns in the same matrix_row */
+            /* for this variable (at X[row, col]), the Hessian has entries with all
+             * columns in the same row, excluding the diagonal (col itself) */
+            int offset = 0;
+            int col_offset = x->var_id + row;
             for (int j = 0; j < x->d2; j++)
             {
-                /* Global column index for column j of this row */
-                int global_col = x->var_id + matrix_row + j * x->d1;
-                H->i[i * nnz_per_row + j] = global_col;
+                if (j != col)
+                {
+                    H->i[start + offset] = col_offset + j * x->d1;
+                    offset++;
+                }
             }
         }
 
@@ -173,67 +175,41 @@ static void wsum_hess_init(expr *node)
     {
         assert(false && "child must be a variable");
     }
-
-    /* print row pointers */
-    // for (int i = 0; i <= node->n_vars; i++)
-    //{
-    //     printf("H->p[%d] = %d\n", i, node->wsum_hess->p[i]);
-    // }
-    //
-    ///* print column indices */
-    // for (int i = 0; i < node->wsum_hess->nnz; i++)
-    //{
-    //     printf("H->i[%d] = %d\n", i, node->wsum_hess->i[i]);
-    // }
-
-    printf("done wsum_hess_init prod_axis_one\n");
 }
 
 static inline void wsum_hess_row_no_zeros(expr *node, const double *w, int row,
                                           int d2)
 {
     expr *x = node->left;
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
     CSR_Matrix *H = node->wsum_hess;
-    double *H_vals = H->x;
-
     double scale = w[row] * node->value[row];
-    int idx_i = row; /* Start with the row offset */
 
-    /* For each variable in this row, fill in Hessian entries */
+    /* for each variable xk in this row, fill in Hessian entries
+    //    TODO: more cache-friendly solution is possible? */
     for (int i = 0; i < d2; i++)
     {
-        int var_i = x->var_id + row + i * x->d1;
-        int row_start = H->p[var_i];
-        idx_i = i * x->d1 + row; /* Element at matrix [row, i] */
-
-        /* Row var_i has nnz entries with columns from the same matrix row */
+        int k = x->var_id + row + i * x->d1;
+        int idx_k = i * x->d1 + row;
+        int offset = 0;
         for (int j = 0; j < d2; j++)
         {
-            if (i == j)
+            if (j != i)
             {
-                /* Diagonal entries are 0 */
-                H_vals[row_start + j] = 0.0;
-            }
-            else
-            {
-                /* Off-diagonal: scale / (x[i] * x[j]) */
-                int idx_j = j * x->d1 + row; /* Element at matrix [row, j] */
-                H_vals[row_start + j] = scale / (x->value[idx_i] * x->value[idx_j]);
+                int idx_j = j * x->d1 + row;
+                H->x[H->p[k] + offset] = scale / (x->value[idx_k] * x->value[idx_j]);
+                offset++;
             }
         }
     }
-    (void) pnode; /* suppress unused warning */
 }
 
 static inline void wsum_hess_row_one_zero(expr *node, const double *w, int row,
                                           int d2)
 {
     expr *x = node->left;
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
     CSR_Matrix *H = node->wsum_hess;
     double *H_vals = H->x;
-
     int p = pnode->zero_index[row]; /* zero column index */
     double w_prod = w[row] * pnode->prod_nonzero[row];
 
@@ -243,25 +219,30 @@ static inline void wsum_hess_row_one_zero(expr *node, const double *w, int row,
         int var_i = x->var_id + row + i * x->d1;
         int row_start = H->p[var_i];
 
-        /* Row var_i has nnz entries with columns from the same matrix row */
+        /* Row var_i has d2-1 entries (excluding diagonal) */
+        int offset = 0;
         for (int j = 0; j < d2; j++)
         {
-            if (i == p && j != p)
+            if (j != i)
             {
-                /* Row p (zero row), column j (nonzero) */
-                int idx_j = j * x->d1 + row;
-                H_vals[row_start + j] = w_prod / x->value[idx_j];
-            }
-            else if (j == p && i != p)
-            {
-                /* Row i (nonzero), column p (zero) */
-                int idx_i = i * x->d1 + row;
-                H_vals[row_start + j] = w_prod / x->value[idx_i];
-            }
-            else
-            {
-                /* All other entries are zero */
-                H_vals[row_start + j] = 0.0;
+                if (i == p && j != p)
+                {
+                    /* row p (zero row), column j (nonzero) */
+                    int idx_j = j * x->d1 + row;
+                    H_vals[row_start + offset] = w_prod / x->value[idx_j];
+                }
+                else if (j == p && i != p)
+                {
+                    /* row i (nonzero), column p (zero) */
+                    int idx_i = i * x->d1 + row;
+                    H_vals[row_start + offset] = w_prod / x->value[idx_i];
+                }
+                else
+                {
+                    /* all other entries are zero */
+                    H_vals[row_start + offset] = 0.0;
+                }
+                offset++;
             }
         }
     }
@@ -271,7 +252,7 @@ static inline void wsum_hess_row_two_zeros(expr *node, const double *w, int row,
                                            int d2)
 {
     expr *x = node->left;
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
     CSR_Matrix *H = node->wsum_hess;
     double *H_vals = H->x;
 
@@ -279,8 +260,7 @@ static inline void wsum_hess_row_two_zeros(expr *node, const double *w, int row,
     int p = -1, q = -1;
     for (int c = 0; c < d2; c++)
     {
-        int idx = c * node->left->d1 + row;
-        if (IS_ZERO(x->value[idx]))
+        if (IS_ZERO(x->value[c * node->left->d1 + row]))
         {
             if (p == -1)
             {
@@ -303,17 +283,22 @@ static inline void wsum_hess_row_two_zeros(expr *node, const double *w, int row,
         int var_i = x->var_id + row + i * x->d1;
         int row_start = H->p[var_i];
 
-        /* Row var_i has nnz entries with columns from the same matrix row */
+        /* row var_i has d2-1 entries (excluding diagonal) */
+        int offset = 0;
         for (int j = 0; j < d2; j++)
         {
-            /* Only (p,q) and (q,p) are nonzero */
-            if ((i == p && j == q) || (i == q && j == p))
+            if (j != i)
             {
-                H_vals[row_start + j] = hess_val;
-            }
-            else
-            {
-                H_vals[row_start + j] = 0.0;
+                /* only (p,q) and (q,p) are nonzero */
+                if ((i == p && j == q) || (i == q && j == p))
+                {
+                    H_vals[row_start + offset] = hess_val;
+                }
+                else
+                {
+                    H_vals[row_start + offset] = 0.0;
+                }
+                offset++;
             }
         }
     }
@@ -325,24 +310,18 @@ static inline void wsum_hess_row_many_zeros(expr *node, int row, int d2)
     double *H_vals = H->x;
     expr *x = node->left;
 
-    /* For each variable in this row, zero out all entries */
+    /* for each variable in this row, zero out all entries */
     for (int i = 0; i < d2; i++)
     {
         int var_i = x->var_id + row + i * x->d1;
-        int row_start = H->p[var_i];
-
-        /* Each variable has d2 entries */
-        for (int j = 0; j < d2; j++)
-        {
-            H_vals[row_start + j] = 0.0;
-        }
+        memset(H_vals + H->p[var_i], 0, sizeof(double) * (d2 - 1));
     }
 }
 
 static void eval_wsum_hess(expr *node, const double *w)
 {
     expr *x = node->left;
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
 
     /* if x is a variable */
     if (x->var_id != NOT_A_VARIABLE)
@@ -383,7 +362,7 @@ static bool is_affine(const expr *node)
 
 static void free_type_data(expr *node)
 {
-    prod_axis_one_expr *pnode = (prod_axis_one_expr *) node;
+    prod_axis *pnode = (prod_axis *) node;
     free(pnode->num_of_zeros);
     free(pnode->zero_index);
     free(pnode->prod_nonzero);
@@ -391,8 +370,7 @@ static void free_type_data(expr *node)
 
 expr *new_prod_axis_one(expr *child)
 {
-    prod_axis_one_expr *pnode =
-        (prod_axis_one_expr *) calloc(1, sizeof(prod_axis_one_expr));
+    prod_axis *pnode = (prod_axis *) calloc(1, sizeof(prod_axis));
     expr *node = &pnode->base;
 
     /* output is always a row vector 1 x d1 (one product per row) */
