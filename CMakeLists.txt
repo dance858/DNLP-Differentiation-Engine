@@ -1,16 +1,6 @@
 
 cmake_minimum_required(VERSION 3.15)
 project(DNLP_Diff_Engine C)
-
-
-# Prefer OpenBLAS unless user overrides BLA_VENDOR
-# if(NOT DEFINED BLA_VENDOR)
-#   set(BLA_VENDOR "OpenBLAS" CACHE STRING "Preferred BLAS vendor" FORCE)
-#   message(STATUS "BLA_VENDOR not set, defaulting to OpenBLAS.")
-# else()
-#   message(STATUS "BLA_VENDOR set to ${BLA_VENDOR}")
-# endif()
-
 set(CMAKE_C_STANDARD 99)
 
 #Set default build type to Release if not specified
