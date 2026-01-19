@@ -1,6 +1,7 @@
 #include "bivariate.h"
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -177,6 +178,14 @@ static bool is_affine(const expr *node)
 
 expr *new_rel_entr_vector_args(expr *left, expr *right)
 {
+    /* if one argument is not a variable, we raise an error */
+    if (left->var_id == NOT_A_VARIABLE || right->var_id == NOT_A_VARIABLE)
+    {
+        fprintf(stderr,
+                "Error: Both arguments of relative entropy must be variables.\n");
+        exit(EXIT_FAILURE);
+    }
+
     expr *node = (expr *) calloc(1, sizeof(expr));
     init_expr(node, left->d1, left->d2, left->n_vars, forward_vector_args,
               jacobian_init_vectors_args, eval_jacobian_vector_args, is_affine,

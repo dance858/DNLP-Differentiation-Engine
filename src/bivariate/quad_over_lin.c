@@ -306,7 +306,14 @@ static bool is_affine(const expr *node)
 
 expr *new_quad_over_lin(expr *left, expr *right)
 {
-    assert((right->d2 == 1 && right->d2 == 1)); /* right must be scalar*/
+    /* if right is not a scalar or a variable by itself, we raise an error */
+    if (right->var_id == NOT_A_VARIABLE && !(right->d1 == 1 && right->d2 == 1))
+    {
+        fprintf(stderr,
+                "Error: Denominator of quad-over-lin must be a scalar variable.\n");
+        exit(EXIT_FAILURE);
+    }
+
     expr *node = (expr *) calloc(1, sizeof(expr));
     init_expr(node, 1, 1, left->n_vars, forward, jacobian_init, eval_jacobian,
               is_affine, wsum_hess_init, eval_wsum_hess, NULL);
