@@ -16,8 +16,7 @@ typedef struct linear_op_expr
     expr base;
     CSC_Matrix *A_csc;
     CSR_Matrix *A_csr;
-    double *b;      /* constant offset vector (can be NULL) */
-    int has_offset; /* flag for whether b is set */
+    double *b; /* constant offset vector (NULL if no offset) */
 } linear_op_expr;
 
 /* Power: y = x^p */

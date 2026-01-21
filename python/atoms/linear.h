@@ -51,7 +51,6 @@ static PyObject *py_make_linear(PyObject *self, PyObject *args)
 
     /* Parse optional b offset vector */
     double *b_data = NULL;
-    int has_offset = 0;
     PyArrayObject *b_array = NULL;
 
     if (b_obj != Py_None)
@@ -62,11 +61,10 @@ static PyObject *py_make_linear(PyObject *self, PyObject *args)
             free_csr_matrix(A);
             return NULL;
         }
-        has_offset = 1;
         b_data = (double *) PyArray_DATA(b_array);
     }
 
-    expr *node = new_linear(child, A, b_data, has_offset);
+    expr *node = new_linear(child, A, b_data);
 
     /* Clean up */
     free_csr_matrix(A);

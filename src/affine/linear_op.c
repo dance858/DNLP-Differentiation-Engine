@@ -15,7 +15,7 @@ static void forward(expr *node, const double *u)
     csr_matvec(lin_node->A_csr, x->value, node->value, x->var_id);
 
     /* y += b (if offset exists) */
-    if (lin_node->has_offset && lin_node->b != NULL)
+    if (lin_node->b != NULL)
     {
         for (int i = 0; i < node->size; i++)
         {
@@ -57,7 +57,7 @@ static void jacobian_init(expr *node)
     node->jacobian = ((linear_op_expr *) node)->A_csr;
 }
 
-expr *new_linear(expr *u, const CSR_Matrix *A, const double *b, int has_offset)
+expr *new_linear(expr *u, const CSR_Matrix *A, const double *b)
 {
     assert(u->d2 == 1);
     /* Allocate the type-specific struct */
@@ -73,9 +73,8 @@ expr *new_linear(expr *u, const CSR_Matrix *A, const double *b, int has_offset)
     copy_csr_matrix(A, lin_node->A_csr);
     lin_node->A_csc = csr_to_csc(A);
 
-    /* Initialize offset */
-    lin_node->has_offset = has_offset;
-    if (has_offset && b != NULL)
+    /* Initialize offset (copy b if provided, otherwise NULL) */
+    if (b != NULL)
     {
         lin_node->b = (double *) malloc(A->m * sizeof(double));
         memcpy(lin_node->b, b, A->m * sizeof(double));
