@@ -14,6 +14,7 @@
 #include "atoms/entr.h"
 #include "atoms/exp.h"
 #include "atoms/getters.h"
+#include "atoms/hstack.h"
 #include "atoms/index.h"
 #include "atoms/left_matmul.h"
 #include "atoms/linear.h"
@@ -69,6 +70,9 @@ static PyMethodDef DNLPMethods[] = {
     {"make_exp", py_make_exp, METH_VARARGS, "Create exp node"},
     {"make_index", py_make_index, METH_VARARGS, "Create index node"},
     {"make_add", py_make_add, METH_VARARGS, "Create add node"},
+    {"make_hstack", py_make_hstack, METH_VARARGS,
+     "Create hstack node from list of expr capsules and n_vars (make_hstack([e1, "
+     "e2, ...], n_vars))"},
     {"make_sum", py_make_sum, METH_VARARGS, "Create sum node"},
     {"make_neg", py_make_neg, METH_VARARGS, "Create neg node"},
     {"make_promote", py_make_promote, METH_VARARGS, "Create promote node"},
