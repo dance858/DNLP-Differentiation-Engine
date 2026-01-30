@@ -8,7 +8,8 @@
 /* forward declaration */
 static void problem_lagrange_hess_fill_sparsity(problem *prob, int *iwork);
 
-problem *new_problem(expr *objective, expr **constraints, int n_constraints)
+problem *new_problem(expr *objective, expr **constraints, int n_constraints,
+                     bool verbose)
 {
     problem *prob = (problem *) calloc(1, sizeof(problem));
     if (!prob) return NULL;
@@ -44,6 +45,10 @@ problem *new_problem(expr *objective, expr **constraints, int n_constraints)
     prob->stats.time_eval_hessian = 0.0;
     prob->stats.time_forward_obj = 0.0;
     prob->stats.time_forward_constraints = 0.0;
+    prob->stats.nnz_affine = 0;
+    prob->stats.nnz_nonlinear = 0;
+
+    prob->verbose = verbose;
 
     return prob;
 }
@@ -63,6 +68,15 @@ void problem_init_derivatives(problem *prob)
         expr *c = prob->constraints[i];
         c->jacobian_init(c);
         nnz += c->jacobian->nnz;
+
+        if (c->is_affine(c))
+        {
+            prob->stats.nnz_affine += c->jacobian->nnz;
+        }
+        else
+        {
+            prob->stats.nnz_nonlinear += c->jacobian->nnz;
+        }
     }
 
     prob->jacobian = new_csr_matrix(prob->total_constraint_size, prob->n_vars, nnz);
@@ -195,6 +209,39 @@ static void problem_lagrange_hess_fill_sparsity(problem *prob, int *iwork)
     }
 }
 
+static inline void print_end_message(const Diff_engine_stats *stats)
+{
+    printf("\n"
+           "============================================================\n"
+           "              DNLP Differentiation Engine v%s\n"
+           "  (c) D. Cederberg and W. Zhang, Stanford University, 2026\n"
+           "============================================================\n",
+           DIFF_ENGINE_VERSION);
+
+    printf("\nProblem statistics:\n");
+    printf("  Nonzeros in affine constraints:      %d\n", stats->nnz_affine);
+    printf("  Nonzeros in nonlinear constraints:   %d\n", stats->nnz_nonlinear);
+
+    printf("\nTiming (seconds):\n");
+    printf("  Derivative structure (sparsity):     %8.3f\n",
+           stats->time_init_derivatives);
+    printf("  Jacobian evaluation:                 %8.3f\n",
+           stats->time_eval_jacobian);
+    printf("  Hessian evaluation:                  %8.3f\n",
+           stats->time_eval_hessian);
+    printf("  Objective evaluation:                %8.3f\n",
+           stats->time_forward_obj);
+    printf("  Constraints evaluation:              %8.3f\n",
+           stats->time_forward_constraints);
+
+    double total_time = stats->time_init_derivatives + stats->time_eval_jacobian +
+                        stats->time_eval_hessian + stats->time_forward_obj +
+                        stats->time_forward_constraints;
+
+    printf("  ----------------------------------------------\n");
+    printf("  Total differentiation time:          %8.3f\n", total_time);
+}
+
 void free_problem(problem *prob)
 {
     if (prob == NULL) return;
@@ -213,6 +260,11 @@ void free_problem(problem *prob)
         free_expr(prob->constraints[i]);
     }
     free(prob->constraints);
+
+    if (prob->verbose)
+    {
+        print_end_message(&prob->stats);
+    }
 
     /* Free problem struct */
     free(prob);

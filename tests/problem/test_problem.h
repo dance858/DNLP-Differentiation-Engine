@@ -30,7 +30,7 @@ const char *test_problem_new_free(void)
     expr *constraints[1] = {x_constraint};
 
     /* Create problem */
-    problem *prob = new_problem(objective, constraints, 1);
+    problem *prob = new_problem(objective, constraints, 1, true);
 
     mu_assert("new_problem failed", prob != NULL);
     mu_assert("n_vars wrong", prob->n_vars == 3);
@@ -56,7 +56,7 @@ const char *test_problem_objective_forward(void)
     expr *x_constraint = new_variable(3, 1, 0, 3);
     expr *constraints[1] = {x_constraint};
 
-    problem *prob = new_problem(objective, constraints, 1);
+    problem *prob = new_problem(objective, constraints, 1, true);
 
     double u[3] = {1.0, 2.0, 3.0};
     problem_init_derivatives(prob);
@@ -104,7 +104,7 @@ const char *test_problem_constraint_forward(void)
 
     expr *constraints[2] = {log_c1, exp_c2};
 
-    problem *prob = new_problem(objective, constraints, 2);
+    problem *prob = new_problem(objective, constraints, 2, true);
 
     double u[2] = {2.0, 4.0};
     problem_init_derivatives(prob);
@@ -130,7 +130,7 @@ const char *test_problem_gradient(void)
     expr *log_x = new_log(x);
     expr *objective = new_sum(log_x, -1);
 
-    problem *prob = new_problem(objective, NULL, 0);
+    problem *prob = new_problem(objective, NULL, 0, true);
 
     double u[3] = {1.0, 2.0, 4.0};
     problem_init_derivatives(prob);
@@ -166,7 +166,7 @@ const char *test_problem_jacobian(void)
 
     expr *constraints[1] = {log_c1};
 
-    problem *prob = new_problem(objective, constraints, 1);
+    problem *prob = new_problem(objective, constraints, 1, true);
 
     double u[2] = {2.0, 4.0};
     problem_init_derivatives(prob);
@@ -230,7 +230,7 @@ const char *test_problem_jacobian_multi(void)
 
     expr *constraints[2] = {log_c1, exp_c2};
 
-    problem *prob = new_problem(objective, constraints, 2);
+    problem *prob = new_problem(objective, constraints, 2, true);
 
     double u[2] = {2.0, 4.0};
     problem_init_derivatives(prob);
@@ -307,7 +307,7 @@ const char *test_problem_hessian(void)
 
     expr *constraints[2] = {exp_c1, sin_c2};
 
-    problem *prob = new_problem(objective, constraints, 2);
+    problem *prob = new_problem(objective, constraints, 2, true);
 
     double u[3] = {1.0, 2.0, 3.0};
     problem_init_derivatives(prob);

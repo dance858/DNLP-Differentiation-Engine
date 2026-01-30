@@ -7,7 +7,8 @@ static PyObject *py_make_problem(PyObject *self, PyObject *args)
 {
     PyObject *obj_capsule;
     PyObject *constraints_list;
-    if (!PyArg_ParseTuple(args, "OO", &obj_capsule, &constraints_list))
+    int verbose = 1;
+    if (!PyArg_ParseTuple(args, "OO|p", &obj_capsule, &constraints_list, &verbose))
     {
         return NULL;
     }
@@ -49,7 +50,8 @@ static PyObject *py_make_problem(PyObject *self, PyObject *args)
         }
     }
 
-    problem *prob = new_problem(objective, constraints, (int) n_constraints);
+    problem *prob =
+        new_problem(objective, constraints, (int) n_constraints, verbose);
     free(constraints);
 
     if (!prob)

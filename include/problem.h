@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "utils/CSR_Matrix.h"
 #include "utils/Timer.h"
+#include <stdbool.h>
 
 typedef struct
 {
@@ -13,7 +14,10 @@ typedef struct
     double time_eval_hessian;
     double time_forward_obj;
     double time_forward_constraints;
-} stats;
+
+    int nnz_affine;
+    int nnz_nonlinear;
+} Diff_engine_stats;
 
 typedef struct problem
 {
@@ -38,11 +42,13 @@ typedef struct problem
     bool jacobian_called;
 
     /* Statistics for performance measurement */
-    stats stats;
+    Diff_engine_stats stats;
+    bool verbose;
 } problem;
 
 /* Retains objective and constraints (shared ownership with caller) */
-problem *new_problem(expr *objective, expr **constraints, int n_constraints);
+problem *new_problem(expr *objective, expr **constraints, int n_constraints,
+                     bool verbose);
 void problem_init_derivatives(problem *prob);
 void free_problem(problem *prob);
 
