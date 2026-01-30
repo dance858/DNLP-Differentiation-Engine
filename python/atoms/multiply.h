@@ -1,8 +1,8 @@
 #ifndef ATOM_MULTIPLY_H
 #define ATOM_MULTIPLY_H
 
-#include "common.h"
 #include "bivariate.h"
+#include "common.h"
 
 static PyObject *py_make_multiply(PyObject *self, PyObject *args)
 {

@@ -7,7 +7,7 @@ static PyObject *py_make_linear(PyObject *self, PyObject *args)
 {
     PyObject *child_capsule;
     PyObject *data_obj, *indices_obj, *indptr_obj;
-    PyObject *b_obj = Py_None;  /* Optional offset vector */
+    PyObject *b_obj = Py_None; /* Optional offset vector */
     int m, n;
 
     /* Accept optional b array: (child, data, indices, indptr, m, n[, b]) */
@@ -55,7 +55,8 @@ static PyObject *py_make_linear(PyObject *self, PyObject *args)
 
     if (b_obj != Py_None)
     {
-        b_array = (PyArrayObject *) PyArray_FROM_OTF(b_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+        b_array = (PyArrayObject *) PyArray_FROM_OTF(b_obj, NPY_DOUBLE,
+                                                     NPY_ARRAY_IN_ARRAY);
         if (!b_array)
         {
             free_csr_matrix(A);

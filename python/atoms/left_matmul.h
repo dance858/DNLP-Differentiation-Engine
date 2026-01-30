@@ -1,8 +1,8 @@
 #ifndef ATOM_LEFT_MATMUL_H
 #define ATOM_LEFT_MATMUL_H
 
-#include "common.h"
 #include "bivariate.h"
+#include "common.h"
 
 /* Left matrix multiplication: A @ f(x) where A is a constant matrix */
 static PyObject *py_make_left_matmul(PyObject *self, PyObject *args)

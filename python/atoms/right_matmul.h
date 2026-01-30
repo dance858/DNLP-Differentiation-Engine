@@ -1,8 +1,8 @@
 #ifndef ATOM_RIGHT_MATMUL_H
 #define ATOM_RIGHT_MATMUL_H
 
-#include "common.h"
 #include "bivariate.h"
+#include "common.h"
 
 /* Right matrix multiplication: f(x) @ A where A is a constant matrix */
 static PyObject *py_make_right_matmul(PyObject *self, PyObject *args)

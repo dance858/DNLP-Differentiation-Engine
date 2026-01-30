@@ -9,14 +9,14 @@
 /* quad_over_lin: y = sum(x^2) / z where x is left, z is right (scalar) */
 static PyObject *py_make_quad_over_lin(PyObject *self, PyObject *args)
 {
-    (void)self;
+    (void) self;
     PyObject *left_capsule, *right_capsule;
     if (!PyArg_ParseTuple(args, "OO", &left_capsule, &right_capsule))
     {
         return NULL;
     }
-    expr *left = (expr *)PyCapsule_GetPointer(left_capsule, EXPR_CAPSULE_NAME);
-    expr *right = (expr *)PyCapsule_GetPointer(right_capsule, EXPR_CAPSULE_NAME);
+    expr *left = (expr *) PyCapsule_GetPointer(left_capsule, EXPR_CAPSULE_NAME);
+    expr *right = (expr *) PyCapsule_GetPointer(right_capsule, EXPR_CAPSULE_NAME);
     if (!left || !right)
     {
         PyErr_SetString(PyExc_ValueError, "invalid child capsule");
