@@ -20,19 +20,23 @@ else()
   message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 endif()
 
-# Warning flags (always enabled)
-add_compile_options(
-    -Wall                  # Enable most warnings
-    -Wextra                # Extra warnings
-    -Wpedantic             # Strict ISO C compliance
-    -Wshadow               # Warn about variable shadowing
-    -Wformat=2             # Extra format string checks
-    -Wcast-qual            # Warn about cast that removes qualifiers
-    -Wcast-align           # Warn about pointer cast alignment issues
-    -Wunused               # Warn about unused variables/functions
-    -Wdouble-promotion     # Warn about float->double promotion
-    -Wnull-dereference     # Warn about null pointer dereference
-)
+# Warning flags (compiler-specific)
+if(MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(
+        -Wall                  # Enable most warnings
+        -Wextra                # Extra warnings
+        -Wpedantic             # Strict ISO C compliance
+        -Wshadow               # Warn about variable shadowing
+        -Wformat=2             # Extra format string checks
+        -Wcast-qual            # Warn about cast that removes qualifiers
+        -Wcast-align           # Warn about pointer cast alignment issues
+        -Wunused               # Warn about unused variables/functions
+        -Wdouble-promotion     # Warn about float->double promotion
+        -Wnull-dereference     # Warn about null pointer dereference
+    )
+endif()
 
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -43,15 +47,28 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 
 # Create core library
 add_library(dnlp_diff ${SOURCES})
-target_link_libraries(dnlp_diff m)
 
-# Config-specific compile options
-target_compile_options(dnlp_diff PRIVATE
-  $<$<CONFIG:Debug>:-g -O0>
-  $<$<CONFIG:Release>:-O3 -DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-O2 -g -DNDEBUG>
-  $<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
-)
+# Link math library (Unix/Linux only)
+if(NOT MSVC)
+    target_link_libraries(dnlp_diff m)
+endif()
+
+# Config-specific compile options (compiler-specific)
+if(MSVC)
+    target_compile_options(dnlp_diff PRIVATE
+        $<$<CONFIG:Debug>:/Od /Zi>
+        $<$<CONFIG:Release>:/O2 /DNDEBUG>
+        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /DNDEBUG>
+        $<$<CONFIG:MinSizeRel>:/Os /DNDEBUG>
+    )
+else()
+    target_compile_options(dnlp_diff PRIVATE
+        $<$<CONFIG:Debug>:-g -O0>
+        $<$<CONFIG:Release>:-O3 -DNDEBUG>
+        $<$<CONFIG:RelWithDebInfo>:-O2 -g -DNDEBUG>
+        $<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
+    )
+endif()
 
 # This is needed for clock_gettime on Linux without compiler extensions
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
